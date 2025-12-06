@@ -18,62 +18,10 @@ static void PrintLogo()
 
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY);
 }
-// Callback function to handle the server response
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp)
-{
-    size_t realsize = size * nmemb;
-    std::string* response = static_cast<std::string*>(userp);
-    response->append(static_cast<char*>(contents), realsize);
-    return realsize;
-}
-static void MakeCurlRequest()
-{
-    CURL* curl = curl_easy_init();
-    if (curl)
-    {
-        curl_easy_setopt(curl, CURLOPT_URL, OBF("https://voidpg.online/api/clanutil"));
-        struct curl_slist* headers = nullptr;
-        headers = curl_slist_append(headers, OBF("User-Agent: ClanUtil"));
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-        std::string response_data;
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_data);
-
-        CURLcode res = curl_easy_perform(curl);
-
-        if (res != CURLE_OK)
-        {
-            std::cerr << OBF("CURL request failed: ") << curl_easy_strerror(res) << std::endl;
-        }
-        else
-        {
-            // Check if the response contains the expected menu version
-            const std::string expected_version = "\"menu\":\"1.1\"";
-            if (response_data.find(expected_version) == std::string::npos)
-            {
-                std::cerr << OBF("Menu version mismatch or server denied access. Terminating application.") << std::endl;
-                curl_slist_free_all(headers);
-                curl_easy_cleanup(curl);
-                exit(0); // Terminate the application
-            }
-        }
-
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
-    }
-    else
-    {
-        std::cerr << OBF("Failed to initialize CURL") << std::endl;
-    }
-}
-
 
 static DWORD WINAPI MainThread(LPVOID param)
 {
-	Features.Load(); // Load everything
-    std::cout << "Calling MakeCurlRequest...\n";
-    MakeCurlRequest();
+	Features.Load();
 
 	AllocConsole();
 	FILE* fp;
@@ -81,7 +29,6 @@ static DWORD WINAPI MainThread(LPVOID param)
 	SetConsoleTitleA(OBF("Clan Utils Console"));
 	const HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
 
-	// Print Unicode characters
 	SetConsoleOutputCP(CP_UTF8);
 	SetConsoleCP(CP_UTF8);
 	std::wcout.imbue(std::locale("en_US.UTF-8"));
