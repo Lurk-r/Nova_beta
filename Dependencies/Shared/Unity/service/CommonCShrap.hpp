@@ -5,21 +5,22 @@ namespace IL2CPP
 {
 	namespace DefaultTypeClass
 	{
-		extern Class* Void;
-		extern Class* Type;
+		extern Class* Array;
 		extern Class* Boolean;
 		extern Class* Byte;
+		extern Class* Char;
+		extern Class* Decimal;
+		extern Class* Double;
+		extern Class* Float;
 		extern Class* Int16;
 		extern Class* Int32;
 		extern Class* Int64;
-		extern Class* Float;
-		extern Class* Double;
-		extern Class* Decimal;
-		extern Class* Char;
-		extern Class* String;
 		extern Class* Object;
-		extern Class* Array;
-		// ADDED VECTOR3
+		extern Class* Quaternion;
+		extern Class* String;
+		extern Class* Type;
+		extern Class* Void;
+		extern Class* Vector2;
 		extern Class* Vector3;
 	}
 
