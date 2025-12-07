@@ -1,4 +1,5 @@
 #include <Logger.hpp>
+#include <Windows.h>
 #include <TlHelp32.h>
 
 static const char* PROCESS = "Pixel Gun 3D.exe";
@@ -13,7 +14,7 @@ static bool fileExists(const char* filePath) {
 }
 
 static void launchGame() {
-    Logger::log<ConsoleColor::Info>("Launching Pixel Gun 3D via Steam...");
+    Logger::Info("Launching Pixel Gun 3D via Steam...");
     ShellExecuteA(nullptr, "open", "steam://rungameid/2524890", nullptr, nullptr, SW_SHOWNORMAL);
 }
 
@@ -112,26 +113,25 @@ int main() {
     strcat_s(dllPath, DLL_NAME);
 
     if (!fileExists(dllPath)) {
-        Logger::log<ConsoleColor::Error>(DLL_NAME);
-        Logger::log<ConsoleColor::Warning>("%s not found.", DLL_NAME);
-        Logger::log<ConsoleColor::Info>("Ensure that %s is in the same folder as the injector.", DLL_NAME);
+        Logger::Error("{} not found.", DLL_NAME);
+        Logger::Info("Ensure that {} is in the same folder as the injector.", DLL_NAME);
         countdown(10);
         return 1;
     }
 
-    Logger::log<ConsoleColor::Info>("Checking if Pixel Gun 3D is running...");
+    Logger::Info("Checking if Pixel Gun 3D is running...");
 
     if (!injectDLL(PROCESS, dllPath)) {
-        Logger::log<ConsoleColor::Warning>("Pixel Gun 3D not found. Launching the game...");
+        Logger::Warning("Pixel Gun 3D not found. Launching the game...");
         launchGame();
 
         while (!injectDLL(PROCESS, dllPath)) {
-            Logger::log<ConsoleColor::Warning>("Waiting for Pixel Gun 3D to start...");
+            Logger::Warning("Waiting for Pixel Gun 3D to start...");
             Sleep(2000);
         }
     }
 
-    Logger::log<ConsoleColor::Info>("%s injected successfully.", DLL_NAME);
+    Logger::Success("{} injected successfully.", DLL_NAME);
     countdown(10);
     return 0;
 }

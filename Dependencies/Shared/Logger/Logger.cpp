@@ -1,34 +1,13 @@
 #include "Logger.hpp"
+#include <windows.h>
+#include <cstdio>
 
-void Logger::setConsoleColor(ConsoleColor color)
+void Logger::SetColor(Type color)
 {
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), static_cast<WORD>(color));
 }
 
-std::string Logger::formatMessage(const char* format, va_list args)
+void Logger::Print(const char* prefix, const std::string& message)
 {
-    char buffer[1024];
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    return std::string(buffer);
+    printf("[%s] %s\n", prefix, message.c_str());
 }
-
-template<ConsoleColor Color>
-void Logger::log(const char* format, ...)
-{
-    setConsoleColor(Color);
-
-    const char* prefix = (Color == ConsoleColor::Info ? "INFO" : (Color == ConsoleColor::Error ? "ERROR" : "WARNING"));
-    printf("[%s] ", prefix);
-
-    va_list args;
-    va_start(args, format);
-    std::string message = formatMessage(format, args);
-    va_end(args);
-
-    printf("%s\n", message.c_str());
-    setConsoleColor(ConsoleColor::Reset);
-}
-
-template void Logger::log<ConsoleColor::Info>(const char* format, ...);
-template void Logger::log<ConsoleColor::Warning>(const char* format, ...);
-template void Logger::log<ConsoleColor::Error>(const char* format, ...);
