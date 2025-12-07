@@ -131,7 +131,7 @@ DO_API(void, il2cpp_gc_wbarrier_set_field, (Il2CppObject* obj, void** targetAddr
 DO_API(bool, il2cpp_gc_has_strict_wbarriers, ());
 DO_API(void, il2cpp_gc_set_external_allocation_tracker, (void(*func)(void*, size_t, int)));
 DO_API(void, il2cpp_gc_set_external_wbarrier_tracker, (void(*func)(void**)));
-DO_API(void, il2cpp_gc_ForEach_heap, (void(*func)(void* data, void* userData), void* userData));
+DO_API(void, il2cpp_gc_foreach_heap, (void(*func)(void* data, void* userData), void* userData));
 DO_API(void, il2cpp_stop_gc_world, ());
 DO_API(void, il2cpp_start_gc_world, ());
 DO_API(void*, il2cpp_gc_alloc_fixed, (size_t size));
@@ -141,7 +141,7 @@ DO_API(uint32_t, il2cpp_gchandle_new, (Il2CppObject* obj, bool pinned));
 DO_API(uint32_t, il2cpp_gchandle_new_weakref, (Il2CppObject* obj, bool track_resurrection));
 DO_API(Il2CppObject*, il2cpp_gchandle_get_target, (uint32_t gchandle));
 DO_API(void, il2cpp_gchandle_free, (uint32_t gchandle));
-DO_API(void, il2cpp_gchandle_ForEach_get_target, (void(*func)(void* data, void* userData), void* userData));
+DO_API(void, il2cpp_gchandle_foreach_get_target, (void(*func)(void* data, void* userData), void* userData));
 
 // vm runtime info
 DO_API(uint32_t, il2cpp_object_header_size, ());

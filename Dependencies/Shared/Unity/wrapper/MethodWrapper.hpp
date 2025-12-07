@@ -11,7 +11,7 @@ namespace IL2CPP
 		template <typename R, typename... Args>
 		class Method<R(Args...)>
 		{
-			private:
+			protected:
 			void* ptr = nullptr;
 
 			public:

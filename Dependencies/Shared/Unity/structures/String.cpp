@@ -1,4 +1,5 @@
 #include "String.hpp"
+#include "String.hpp"
 #include <codecvt>
 
 namespace IL2CPP
@@ -10,9 +11,19 @@ namespace IL2CPP
 		return (String*)IMPORT::il2cpp_string_new(str);
 	}
 
+	String* String::Create(const wchar_t* str, int32_t len)
+	{
+		return (String*)IMPORT::il2cpp_string_new_utf16((IMPORT::Il2CppChar*)str, len);
+	}
+
 	String* String::Create(const std::string& str)
 	{
 		return (String*)IMPORT::il2cpp_string_new(str.c_str());
+	}
+
+	String* String::Create(const std::wstring& str)
+	{
+		return (String*)IMPORT::il2cpp_string_new_utf16((IMPORT::Il2CppChar*)str.c_str(), str.size());
 	}
 
 	bool String::Equals(String* str)
@@ -58,6 +69,13 @@ namespace IL2CPP
 
 	std::string String::ToString()
 	{
-		return { converter.to_bytes(this->chars, this->chars + this->length)};
+		// FIX: Check if the pointer is NULL before reading memory!
+		if (!this) return "null";
+
+		// FIX: Check if length is valid to prevent bounds errors
+		if (this->length <= 0) return "";
+
+		// Original Logic
+		return { converter.to_bytes(this->chars, this->chars + this->length) };
 	}
 }

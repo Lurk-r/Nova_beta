@@ -4,19 +4,22 @@ namespace IL2CPP
 {
 	namespace DefaultTypeClass
 	{
-		const Class* Type;
-		const Class* Boolean;
-		const Class* Byte;
-		const Class* Int16;
-		const Class* Int32;
-		const Class* Int64;
-		const Class* Float;
-		const Class* Double;
-		const Class* Decimal;
-		const Class* Char;
-		const Class* String;
-		const Class* Object;
-		const Class* Array;
+		Class* Void;
+		Class* Type;
+		Class* Boolean;
+		Class* Byte;
+		Class* Int16;
+		Class* Int32;
+		Class* Int64;
+		Class* Float;
+		Class* Double;
+		Class* Decimal;
+		Class* Char;
+		Class* String;
+		Class* Object;
+		Class* Array;
+		// ADDED VECTOR3
+		Class* Vector3;
 	}
 
 	namespace DefaultImage
@@ -40,8 +43,9 @@ namespace IL2CPP
 			DefaultImage::UnityPhysicsModule = domain->OpenAssembly("UnityEngine.PhysicsModule.dll");
 			DefaultImage::AssemblyCSharp = domain->OpenAssembly("Assembly-CSharp.dll");
 
-			#define DEFAULTS_INIT(field, ns, n) DefaultTypeClass::field = (Class*)IMPORT::il2cpp_class_from_name(IMPORT::il2cpp_get_corlib(), ns, n)
-
+			// REVERTED to your original, working macro
+#define DEFAULTS_INIT(field, ns, n) DefaultTypeClass::field = (Class*)IMPORT::il2cpp_class_from_name(IMPORT::il2cpp_get_corlib(), ns, n)
+			DEFAULTS_INIT(Void, "System", "Void");
 			DEFAULTS_INIT(Type, "System", "Type");
 			DEFAULTS_INIT(Boolean, "System", "Boolean");
 			DEFAULTS_INIT(Byte, "System", "Byte");
@@ -55,8 +59,10 @@ namespace IL2CPP
 			DEFAULTS_INIT(String, "System", "String");
 			DEFAULTS_INIT(Object, "System", "Object");
 			DEFAULTS_INIT(Array, "System", "Array");
+#undef DEFAULTS_INIT
 
-			#undef DEFAULTS_INIT
+			// ADDED VECTOR3 INITIALIZATION using the correct image pointer
+			DefaultTypeClass::Vector3 = (Class*)IMPORT::il2cpp_class_from_name((IMPORT::Il2CppImage*)DefaultImage::UnityCoreModule, "UnityEngine", "Vector3");
 		}
 	}
 }

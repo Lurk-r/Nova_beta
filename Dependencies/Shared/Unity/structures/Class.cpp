@@ -30,7 +30,7 @@ namespace IL2CPP
 			ForceInitializeClass();
 		}
 
-		return (Class*)this->implementedInterfaces[index];
+		return (Class*) this->implementedInterfaces[index];
 	}
 
 	std::string Class::GetNamespace() const
@@ -66,7 +66,7 @@ namespace IL2CPP
 			ForceInitializeClass();
 		}
 
-		return (FieldInfo*)&this->fields[index];
+		return (FieldInfo*) &this->fields[index];
 	}
 
 	FieldInfo* Class::GetField(const std::string& fieldName, int32_t indexOffset) const
@@ -121,7 +121,7 @@ namespace IL2CPP
 			throw Exception::IndexOutOfBounds(index, MethodCount());
 		}
 
-		return (MethodInfo*)this->methods[index];
+		return (MethodInfo*) this->methods[index];
 	}
 
 	MethodInfo* Class::GetMethod(const std::string& methodName) const
@@ -251,7 +251,7 @@ namespace IL2CPP
 
 				size_t successParamCounter = 0;
 
-				for (size_t j = 0; j < method->GetParametersCount(); j++)
+				for(size_t j = 0; j < method->GetParametersCount(); j++)
 				{
 					const char* typeName = pattern.parameterTypeList[j];
 
@@ -302,9 +302,9 @@ namespace IL2CPP
 		}
 	}
 
-	bool Class::CompareFieldPattern(const FieldPattern* fieldPattern) const
+	bool Class::CompareFieldPattern(const FieldPattern& fieldPattern) const
 	{
-		if (fieldPattern->size() != FieldCount())
+		if (fieldPattern.size() != FieldCount())
 		{
 			return false;
 		}
@@ -315,7 +315,7 @@ namespace IL2CPP
 		{
 			Class* fieldClass = this->GetField(i)->GetType()->GetClass();
 
-			const char* currentPattern = fieldPattern->at(i);
+			const char* currentPattern = fieldPattern[i];
 
 			if (currentPattern == nullptr)
 			{
@@ -347,10 +347,10 @@ namespace IL2CPP
 
 	bool Class::IsEnum() const
 	{
-		return IMPORT::il2cpp_class_is_enum(this); //this->enumtype;
+		return IMPORT::il2cpp_class_is_enum(this);
 	}
 
-	uint32_t Class::GetFlags()
+	uint32_t Class::GetFlags() 
 	{
 		return this->flags;
 	}

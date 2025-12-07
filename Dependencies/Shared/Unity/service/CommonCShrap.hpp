@@ -5,19 +5,22 @@ namespace IL2CPP
 {
 	namespace DefaultTypeClass
 	{
-		extern const Class* Type;
-		extern const Class* Boolean;
-		extern const Class* Byte;
-		extern const Class* Int16;
-		extern const Class* Int32;
-		extern const Class* Int64;
-		extern const Class* Float;
-		extern const Class* Double;
-		extern const Class* Decimal;
-		extern const Class* Char;
-		extern const Class* String;
-		extern const Class* Object;
-		extern const Class* Array;
+		extern Class* Void;
+		extern Class* Type;
+		extern Class* Boolean;
+		extern Class* Byte;
+		extern Class* Int16;
+		extern Class* Int32;
+		extern Class* Int64;
+		extern Class* Float;
+		extern Class* Double;
+		extern Class* Decimal;
+		extern Class* Char;
+		extern Class* String;
+		extern Class* Object;
+		extern Class* Array;
+		// ADDED VECTOR3
+		extern Class* Vector3;
 	}
 
 	namespace DefaultImage
@@ -27,10 +30,6 @@ namespace IL2CPP
 		extern const Image* UnityCoreModule;
 		extern const Image* UnityPhysicsModule;
 		extern const Image* AssemblyCSharp;
-		extern const Image* InputLegacyModule;
-		extern const Image* Photon3Unity3D;
-		extern const Image* SteamworksNet;
-		extern const Image* UserSessionManagement;
 	}
 
 	namespace CommonCShrap

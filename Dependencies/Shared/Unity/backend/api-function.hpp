@@ -11,7 +11,7 @@
 		IMPORT::n = (r (*) p) ptr;															\
 		if(ptr == nullptr)																	\
 		{																					\
-			std::printf("", #n);		\
+			std::printf("[ERROR] Couldn't resolve '%s' api function export.\n", #n);		\
 		}																					\
 	}																						\
 

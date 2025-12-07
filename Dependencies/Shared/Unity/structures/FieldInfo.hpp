@@ -24,7 +24,7 @@ namespace IL2CPP
 			{
 				void* value = nullptr;
 				IMPORT::il2cpp_field_static_get_value(this, &value);
-				return (T)value;
+				return (T) value;
 			}
 
 			if (instance == nullptr)

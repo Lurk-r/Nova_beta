@@ -19,7 +19,7 @@ namespace IL2CPP
 
 				InitializeException(
 					IL2CPP_NAMEOF(IndexOutOfBounds),
-					std::format("Index was outside of the bounds of an array. (array size: {0} | pointed index: {1}",
+					std::format("Index was outside of the bounds of an array. (array size: {0} | pointed index: {1})",
 						arraySize,
 						pointedIndex
 					)

@@ -24,7 +24,6 @@ namespace IL2CPP
 				// FOR PATTERN TYPE
 				const FieldPattern* pattern = nullptr;
 				int32_t methodCount = -1;
-
 				ClassQueue(const std::string& className)
 				{
 					this->type = ClassQueueType::CLASS_NAME;
@@ -32,6 +31,13 @@ namespace IL2CPP
 					this->keyname = className;
 				}
 
+				ClassQueue(const std::string& keyname, const FieldPattern* pattern)
+				{
+					this->type = ClassQueueType::PATTERN;
+
+					this->keyname = keyname;
+					this->pattern = pattern;
+				}
 				ClassQueue(const std::string& keyname, const FieldPattern* pattern, size_t methodCount)
 				{
 					this->type = ClassQueueType::PATTERN;
@@ -40,7 +46,6 @@ namespace IL2CPP
 					this->pattern = pattern;
 					this->methodCount = methodCount;
 				}
-
 				std::string ToString()
 				{
 					std::stringstream out;
@@ -54,21 +59,20 @@ namespace IL2CPP
 					{
 						out << "Type: PATTERN" << std::endl;
 						out << "Keyname: " << keyname << std::endl;
-						out << "MethodCount: " << (methodCount < 0 ? "ANY" : std::to_string(methodCount)) << std::endl;
 						out << "Pattern: {";
 
 						for (size_t i = 0; i < pattern->size(); i++)
 						{
 							const char* v = pattern->at(i);
-							std::string str = v == nullptr ? "nullptr" : std::format(R"("{}")", v);
+							v = v == nullptr ? "nullptr" : v;
 
 							if (i != pattern->size() - 1)
 							{
-								out << str << ", ";
+								out << "\"" << v << "\"" ", ";
 							}
 							else
 							{
-								out << str;
+								out << "\"" << v << "\"";
 							}
 						}
 
@@ -81,7 +85,7 @@ namespace IL2CPP
 
 			std::unordered_map<std::string, Class*> classMap;
 			std::unordered_map<std::string, std::deque<ClassQueue>> queueMap;
-			std::vector<const Image*> imageToScan;
+			std::vector<Image*> imageToScan;
 
 			void HandleClass(Class* klass)
 			{
@@ -94,31 +98,11 @@ namespace IL2CPP
 					return;
 				}
 
-				if (klass->GetNamespace() != namespaceIter->first)
-				{
-					return;
-				}
-
 				for (auto queueIter = namespaceIter->second.begin(); queueIter != namespaceIter->second.end();)
 				{
-					bool matches = false;
-
-					switch (queueIter->type)
-					{
-						case ClassQueueType::CLASS_NAME:
-						{
-							matches = className == queueIter->keyname;
-							break;
-						}
-						case ClassQueueType::PATTERN:
-						{
-							matches = (queueIter->methodCount < 0 || queueIter->methodCount == klass->MethodCount()) 
-								&& klass->CompareFieldPattern(*queueIter->pattern);
-							break;
-						}
-						default:
-							matches = false;
-					}
+					bool matches = 
+						(queueIter->type == ClassQueueType::CLASS_NAME && className == queueIter->keyname) ||
+						(queueIter->type == ClassQueueType::PATTERN && klass->CompareFieldPattern(queueIter->pattern));
 
 					if (matches)
 					{
@@ -138,7 +122,7 @@ namespace IL2CPP
 			}
 		}
 
-		void AddImageToScan(const Image* image)
+		void AddImageToScan(Image* image)
 		{
 			if (image == nullptr)
 			{
@@ -176,12 +160,10 @@ namespace IL2CPP
 			INTERNAL::queueMap[namespaze].push_back(
 				INTERNAL::ClassQueue(
 					mapKeyname,
-					pattern,
-					-1
+					pattern
 				)
 			);
 		}
-
 		void AddQueue(const std::string& mapKeyname, const std::string& namespaze, const FieldPattern* pattern, int32_t methodCount)
 		{
 			if (pattern == nullptr)
@@ -198,7 +180,6 @@ namespace IL2CPP
 				)
 			);
 		}
-
 		void ClearImagesToScan()
 		{
 			INTERNAL::imageToScan.clear();
@@ -216,7 +197,7 @@ namespace IL2CPP
 
 		void StartMapping()
 		{
-			for(const Image* image : INTERNAL::imageToScan)
+			for(Image* image : INTERNAL::imageToScan)
 			{
 				image->IterateClasses(INTERNAL::HandleClass);
 			}
