@@ -16,6 +16,32 @@ namespace PixelTime
         });
     }
 
+    void CheckPlayerSlots(int playerID, const std::vector<int>& slots)
+    {
+        Socket::SendCommand(Commands::GrabbedSlots(playerID, slots), [&](Structs::Socket::Response packet) {
+            if (packet.ResponseStatus == OBF("OK")) {
+                if (packet.response.is_array() && !packet.response.empty())
+                {
+                    const auto& responseData = packet.response[0];
+                    if (responseData.contains("slots"))
+                    {
+                        const auto& slotsData = responseData["slots"];
+                        Variables::GrabbedPlayerProgress = slotsData.dump(4);
+
+                        //printf("\n--- PLAYER PROGRESS CAPTURED ---\n%s\n--- END DUMP ---\n\n", Variables::GrabbedPlayerProgress.c_str());
+                        ImGui::InsertNotification({ ImGuiToastType::Success, 3000, OBF("Player progress captured successfully!") });
+                        return;
+                    }
+                }
+                ImGui::InsertNotification({ ImGuiToastType::Error, 3000, OBF("format invalid nigger") });
+
+            }
+            else {
+                ImGui::InsertNotification({ ImGuiToastType::Error, 3000, OBF("Failed to get player progress.") });
+            }
+            });
+    }
+
     // Functions
     VOID(*PixelTime_o)(IL2CPP::Object* Instance);
     VOID PixelTime(IL2CPP::Object* Instance)
@@ -47,6 +73,26 @@ namespace PixelTime
             {
                 Socket::SendNotifCommand(OBF("Spend Currency"), Commands::Currency(true));
                 Variables::SpendCurrency = false;
+            }
+
+            if (Variables::LoadoutFixer)
+            {
+                Socket::SendNotifCommand(OBF("Resetting Loadout 1"), Commands::SetLoadout(0));
+                Socket::SendNotifCommand(OBF("Resetting Loadout 2"), Commands::SetLoadout(1));
+                Socket::SendNotifCommand(OBF("Resetting Loadout 3"), Commands::SetLoadout(2));
+                Socket::SendNotifCommand(OBF("Resetting Default Loadout"), Commands::ResetLoadout());
+                Variables::LoadoutFixer = false;
+            }
+
+            if (Variables::SetPayingUser) {
+                Socket::SendNotifCommand(OBF("Set Paying User (1/2)"), Commands::SetPayingUser1());
+                Socket::SendNotifCommand(OBF("Set Paying User (2/2)"), Commands::SetPayingUser2());
+                Variables::SetPayingUser = false;
+            }
+
+            if (Variables::SetKeys) {
+                Socket::SendNotifCommand(OBF("Set Keys"), Commands::SetKeys(Variables::CurrencyAmount, Variables::LotteryNumber));
+                Variables::SetKeys = false;
             }
 
             if (Variables::AddModule)
@@ -144,6 +190,11 @@ namespace PixelTime
                 Socket::SendNotifCommand(OBF("Set Level"), Commands::SetLevel(Variables::AdderLevel));
                 Variables::SetLevel = false;
             }
+            if (Variables::SkipTutorial)
+            {
+                Socket::SendNotifCommand(OBF("Skipped BR Tutorial"), Commands::SkipBrTutorial());
+                Variables::SkipTutorial = false;
+            }
 
             if (Variables::AddWin)
             {
@@ -232,6 +283,15 @@ namespace PixelTime
                 Variables::CheckSlots[1] = false;
             }
 
+            if (Variables::GetPlayerProgress)
+            {
+                std::vector<int> allSlots;
+                for (int i = 1; i <= 100; ++i) allSlots.push_back(i);
+                CheckPlayerSlots(Variables::GrabbedPlayerID, allSlots);
+                ImGui::InsertNotification({ ImGuiToastType::Info, 3000, OBF("Grabbing Progress") });
+                Variables::GetPlayerProgress = false;
+            }
+
             if (Variables::CheckSlots[2])
             {
                 CheckMySlots(OBF(37), Variables::UpgradeAllModules);
@@ -244,9 +304,65 @@ namespace PixelTime
                 Socket::SendNotifCommand(OBF("Custom Command"), Commands::Custom());
                 Variables::SendCommand = false;
             }
+
+            //Pixel Pass Shit
+            if (Variables::CustomBattlepassSender)
+            {
+                ImGui::InsertNotification({ ImGuiToastType::Info, 3000, OBF("Step 1/4: Wiping old pass slot...") });
+                Socket::SendCommand(Commands::WipePassSlot());
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                ImGui::InsertNotification({ ImGuiToastType::Info, 3000, OBF("Step 2/4: Sending custom pass data...") });
+                Socket::SendCommand(Commands::NovaPixelPass(Variables::PassDayCount, Variables::MaxTierNumber));
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                ImGui::InsertNotification({ ImGuiToastType::Info, 3000, OBF("Step 3/4: Setting pass experience...") });
+                Socket::SendCommand(Commands::SetPassExperience());
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                ImGui::InsertNotification({ ImGuiToastType::Info, 3000, OBF("Step 4/4: Finalizing pass...") });
+                Socket::SendCommand(Commands::ActivatePass());
+                ImGui::InsertNotification({ ImGuiToastType::Success, 5000, OBF("Custom Battlepass Added!") });
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                Socket::SendCommand(Commands::Reload());
+                Variables::CustomBattlepassSender = false;
+            }
+
+            if (Variables::GiftingPassSender)
+            {
+                ImGui::InsertNotification({ ImGuiToastType::Info, 3000, OBF("Step 1/4: Wiping old pass slot...") });
+                Socket::SendCommand(Commands::WipePassSlot());
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                ImGui::InsertNotification({ ImGuiToastType::Info, 3000, OBF("Step 2/4: Sending gift pass data...") });
+                Socket::SendCommand(Commands::CustomGiftingPass(Variables::currentGiftItems));
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                ImGui::InsertNotification({ ImGuiToastType::Success, 5000, OBF("Gift Pass Sent!") });
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                Socket::SendCommand(Commands::Reload());
+                Variables::GiftingPassSender = false;
+            }
+
+            //Sandbox
+            if (Variables::SetSandboxHeart) {
+                Socket::SendNotifCommand(OBF("Set Heart Count"), Commands::SetSandboxHeart(Variables::SandboxHeartCount));
+                Variables::SetSandboxHeart = false;
+            }
+            if (Variables::SetSandboxWings) {
+                Socket::SendNotifCommand(OBF("Set Wings Count"), Commands::SetSandboxWings(Variables::SandboxWingsCount));
+                Variables::SetSandboxWings = false;
+            }
+            if (Variables::SetSandboxDisco) {
+                Socket::SendNotifCommand(OBF("Set Disco Count"), Commands::SetSandboxDisco(Variables::SandboxDiscoCount));
+                Variables::SetSandboxDisco = false;
+            }
+            if (Variables::SetSandboxHead) {
+                Socket::SendNotifCommand(OBF("Set Head Count"), Commands::SetSandboxHead(Variables::SandboxHeadCount));
+                Variables::SetSandboxHead = false;
+            }
+            if (Variables::SetSandboxBear) {
+                Socket::SendNotifCommand(OBF("Set Bear Count"), Commands::SetSandboxBear(Variables::SandboxBearCount));
+                Variables::SetSandboxBear = false;
+            }
+
             
         }
-
         return PixelTime_o(Instance);
     }
 
@@ -254,6 +370,5 @@ namespace PixelTime
     void Init()
     {
         HookMethod("PixelTime", "Update", PixelTime, (LPVOID*)&PixelTime_o);
-
     }
 }
