@@ -21,7 +21,7 @@ namespace Socket
     // Command Creation
     IL2CPP::Array<IL2CPP::Object*>* CreateSocketCommand(const json& Data)
     {
-        IL2CPP::Array<IL2CPP::Object*>* SocketCommand = IL2CPP::Array<IL2CPP::Object*>::Create<IL2CPP::Object*>(const_cast<IL2CPP::Class*>(IL2CPP::DefaultTypeClass::Object), 1);
+        IL2CPP::Array<IL2CPP::Object*>* SocketCommand = IL2CPP::Array<IL2CPP::Object*>::Create(IL2CPP::DefaultTypeClass::Object, 1);
         SocketCommand->GetVectorPointer()[0] = Pointers::Json::Decode(IL2CPP::String::Create(Data.dump().c_str()));
         return SocketCommand;
     }

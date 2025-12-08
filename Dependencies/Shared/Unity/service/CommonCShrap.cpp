@@ -4,22 +4,23 @@ namespace IL2CPP
 {
 	namespace DefaultTypeClass
 	{
-		Class* Void;
-		Class* Type;
-		Class* Boolean;
-		Class* Byte;
-		Class* Int16;
-		Class* Int32;
-		Class* Int64;
-		Class* Float;
-		Class* Double;
-		Class* Decimal;
-		Class* Char;
-		Class* String;
-		Class* Object;
-		Class* Array;
-		// ADDED VECTOR3
-		Class* Vector3;
+		Class* Array = nullptr;
+		Class* Boolean = nullptr;
+		Class* Byte = nullptr;
+		Class* Char = nullptr;
+		Class* Decimal = nullptr;
+		Class* Double = nullptr;
+		Class* Float = nullptr;
+		Class* Int16 = nullptr;
+		Class* Int32 = nullptr;
+		Class* Int64 = nullptr;
+		Class* Object = nullptr;
+		Class* Quaternion = nullptr;
+		Class* String = nullptr;
+		Class* Type = nullptr;
+		Class* Void = nullptr;
+		Class* Vector2 = nullptr;
+		Class* Vector3 = nullptr;
 	}
 
 	namespace DefaultImage
@@ -33,6 +34,11 @@ namespace IL2CPP
 
 	namespace CommonCShrap
 	{
+		constexpr auto INIT_CLASS = [](Class*& field, const Image* image, const char* className)
+		{
+			field = image->GetClass(className);
+		};
+
 		void INIT()
 		{
 			Domain* domain = CurrentDomain();
@@ -43,26 +49,34 @@ namespace IL2CPP
 			DefaultImage::UnityPhysicsModule = domain->OpenAssembly("UnityEngine.PhysicsModule.dll");
 			DefaultImage::AssemblyCSharp = domain->OpenAssembly("Assembly-CSharp.dll");
 
-			// REVERTED to your original, working macro
-#define DEFAULTS_INIT(field, ns, n) DefaultTypeClass::field = (Class*)IMPORT::il2cpp_class_from_name(IMPORT::il2cpp_get_corlib(), ns, n)
-			DEFAULTS_INIT(Void, "System", "Void");
-			DEFAULTS_INIT(Type, "System", "Type");
-			DEFAULTS_INIT(Boolean, "System", "Boolean");
-			DEFAULTS_INIT(Byte, "System", "Byte");
-			DEFAULTS_INIT(Int16, "System", "Int16");
-			DEFAULTS_INIT(Int32, "System", "Int32");
-			DEFAULTS_INIT(Int64, "System", "Int64");
-			DEFAULTS_INIT(Float, "System", "Single");
-			DEFAULTS_INIT(Double, "System", "Double");
-			DEFAULTS_INIT(Decimal, "System", "Decimal");
-			DEFAULTS_INIT(Char, "System", "Char");
-			DEFAULTS_INIT(String, "System", "String");
-			DEFAULTS_INIT(Object, "System", "Object");
-			DEFAULTS_INIT(Array, "System", "Array");
-#undef DEFAULTS_INIT
+			constexpr auto INIT_CORLIB = [](Class*& field, const char* className)
+			{
+				INIT_CLASS(field, DefaultImage::Corlib, className);
+			};
 
-			// ADDED VECTOR3 INITIALIZATION using the correct image pointer
-			DefaultTypeClass::Vector3 = (Class*)IMPORT::il2cpp_class_from_name((IMPORT::Il2CppImage*)DefaultImage::UnityCoreModule, "UnityEngine", "Vector3");
+			constexpr auto INIT_UNITY_ENGINE = [](Class*& field, const char* className)
+			{
+				INIT_CLASS(field, DefaultImage::UnityCoreModule, className);
+			};
+
+			INIT_CORLIB(DefaultTypeClass::Array, "System.Array");
+			INIT_CORLIB(DefaultTypeClass::Boolean, "System.Boolean");
+			INIT_CORLIB(DefaultTypeClass::Byte, "System.Byte");
+			INIT_CORLIB(DefaultTypeClass::Char, "System.Char");
+			INIT_CORLIB(DefaultTypeClass::Decimal, "System.Decimal");
+			INIT_CORLIB(DefaultTypeClass::Double, "System.Double");
+			INIT_CORLIB(DefaultTypeClass::Float, "System.Single");
+			INIT_CORLIB(DefaultTypeClass::Int16, "System.Int16");
+			INIT_CORLIB(DefaultTypeClass::Int32, "System.Int32");
+			INIT_CORLIB(DefaultTypeClass::Int64, "System.Int64");
+			INIT_CORLIB(DefaultTypeClass::Object, "System.Object");
+			INIT_CORLIB(DefaultTypeClass::String, "System.String");
+			INIT_CORLIB(DefaultTypeClass::Type, "System.Type");
+			INIT_CORLIB(DefaultTypeClass::Void, "System.Void");
+
+			INIT_UNITY_ENGINE(DefaultTypeClass::Quaternion, "UnityEngine.Quaternion");
+			INIT_UNITY_ENGINE(DefaultTypeClass::Vector2, "UnityEngine.Vector2");
+			INIT_UNITY_ENGINE(DefaultTypeClass::Vector3, "UnityEngine.Vector3");
 		}
 	}
 }
