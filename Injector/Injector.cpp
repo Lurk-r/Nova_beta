@@ -6,7 +6,7 @@ static const char* PROCESS = "Pixel Gun 3D.exe";
 #ifdef _DEBUG
 static const char* DLL_NAME = "ClanUtilsV1.dll";
 #else
-static const char* DLL_NAME = "ClanUtils-Release.dll";
+static const char* DLL_NAME = "Nova Client-Release.dll";
 #endif
 
 static bool fileExists(const char* filePath) {

@@ -6048,6 +6048,147 @@ void ImGui::EndChild()
     g.WithinEndChild = false;
     g.LogLinePosY = -FLT_MAX; // To enforce a carriage return
 }
+bool ImGui::BeginCustomChild(const char* str_id, const ImVec2& size_arg, bool sub_tab, ImGuiWindowFlags extra_flags)
+{
+    const float rounding = 8.0f;
+    const float border_thick = 1.0f;
+    const ImVec2 padding = ImVec2(12.0f, 12.0f);
+
+    const ImU32 bg_color = IM_COL32(12, 12, 14, 250);
+
+    const ImU32 border_color = ImGui::ColorConvertFloat4ToU32(
+        ImVec4(ThemeColor.x * 0.35f, ThemeColor.y * 0.35f, ThemeColor.z * 0.35f, 0.6f)
+    );
+
+    const float header_height = 32.0f;
+    const ImU32 header_color = IM_COL32(8, 8, 10, 255);
+
+    const float title_left_pad = 12.0f;
+    const float title_top_pad = 8.0f;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, rounding);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 0, 0, 0));
+
+    bool opened = ImGui::BeginChild(
+        str_id,
+        size_arg,
+        ImGuiChildFlags_AlwaysUseWindowPadding,
+        extra_flags | ImGuiWindowFlags_NoScrollbar
+    );
+
+    ImGui::PopStyleColor(1);
+    ImGui::PopStyleVar(3);
+
+    if (!opened)
+    {
+        ImGui::EndChild();
+        return false;
+    }
+
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    ImDrawList* draw_list = window->DrawList;
+    const ImVec2 pos = window->Pos;
+    const ImVec2 size = window->Size;
+
+    ImVec4 glow_color = ImVec4(ThemeColor.x * 0.3f, ThemeColor.y * 0.3f, ThemeColor.z * 0.3f, 0.15f);
+    draw_list->AddShadowRect(
+        pos,
+        pos + size,
+        ImGui::ColorConvertFloat4ToU32(glow_color),
+        20.0f,
+        ImVec2(0, 0),
+        ImDrawFlags_RoundCornersAll,
+        rounding
+    );
+
+    draw_list->AddRectFilled(pos, pos + size, bg_color, rounding);
+
+    draw_list->AddRectFilled(
+        pos,
+        ImVec2(pos.x + size.x, pos.y + header_height),
+        header_color,
+        rounding,
+        ImDrawFlags_RoundCornersTop
+    );
+
+    const ImU32 separator_color = ImGui::ColorConvertFloat4ToU32(
+        ImVec4(ThemeColor.x * 0.4f, ThemeColor.y * 0.4f, ThemeColor.z * 0.4f, 0.3f)
+    );
+    draw_list->AddLine(
+        ImVec2(pos.x + 8.0f, pos.y + header_height),
+        ImVec2(pos.x + size.x - 8.0f, pos.y + header_height),
+        separator_color,
+        1.0f
+    );
+
+    draw_list->AddRect(pos, pos + size, border_color, rounding, 0, border_thick);
+
+    ImVec2 title_pos = ImVec2(pos.x + title_left_pad, pos.y + title_top_pad);
+
+    ImU32 start_color_u32 = ImGui::ColorConvertFloat4ToU32(
+        ImVec4(
+            ImMin(1.0f, ThemeColor.x * 1.5f),
+            ImMin(1.0f, ThemeColor.y * 1.5f),
+            ImMin(1.0f, ThemeColor.z * 1.5f),
+            1.0f
+        )
+    );
+    ImU32 end_color_u32 = ImGui::ColorConvertFloat4ToU32(
+        ImVec4(ThemeColor.x * 0.8f, ThemeColor.y * 0.8f, ThemeColor.z * 0.8f, 1.0f)
+    );
+
+    const char* text_start = str_id;
+    const char* text_end = text_start + strlen(text_start);
+    const float total_width = ImGui::CalcTextSize(text_start, text_end).x;
+
+    if (total_width > 0.0f)
+    {
+        ImVec4 col_start = ImGui::ColorConvertU32ToFloat4(start_color_u32);
+        ImVec4 col_end = ImGui::ColorConvertU32ToFloat4(end_color_u32);
+
+        const char* p = text_start;
+        float current_x_offset = 0.f;
+
+        while (p < text_end)
+        {
+            unsigned int c;
+            int c_len = ImTextCharFromUtf8(&c, p, text_end);
+            if (c_len == 0) break;
+
+            char single_char_buffer[5] = { 0 };
+            memcpy(single_char_buffer, p, c_len);
+            float char_width = ImGui::CalcTextSize(single_char_buffer).x;
+
+            float t = (current_x_offset + char_width * 0.5f) / total_width;
+            ImVec4 char_color_v4 = ImLerp(col_start, col_end, t);
+            ImU32 char_color = ImGui::ColorConvertFloat4ToU32(char_color_v4);
+
+            draw_list->AddText(
+                ImVec2(title_pos.x + current_x_offset, title_pos.y),
+                char_color,
+                single_char_buffer
+            );
+
+            current_x_offset += char_width;
+            p += c_len;
+        }
+    }
+    else
+    {
+        draw_list->AddText(title_pos, start_color_u32, text_start);
+    }
+
+    ImGui::SetCursorPosY(header_height + padding.y - 3.f);
+
+    return true;
+}
+
+void ImGui::EndCustomChild()
+{
+    ImGui::EndChild();
+}
 
 bool ImGui::CustomChildEx(const char* name, ImGuiID id, const ImVec2& size_arg, bool border, ImGuiWindowFlags flags)
 {

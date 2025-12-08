@@ -388,9 +388,20 @@ namespace ImGui
     IMGUI_API bool          BeginChild(ImGuiID id, const ImVec2& size = ImVec2(0, 0), ImGuiChildFlags child_flags = 0, ImGuiWindowFlags window_flags = 0);
     IMGUI_API bool          CustomChildEx(const char* name, ImGuiID id, const ImVec2& size_arg, bool border, ImGuiWindowFlags flags);
     IMGUI_API bool          CustomChild(const char* str_id, const ImVec2& size_arg = ImVec2(0, 0), bool sub_tab = false, ImGuiWindowFlags extra_flags = NULL);
+    IMGUI_API bool BeginCustomChild(const char* str_id, const ImVec2& size_arg, bool sub_tab = false, ImGuiWindowFlags extra_flags = 0);
+    IMGUI_API void EndCustomChild();
+    IMGUI_API void  RenderGradientText(const char* text, ImVec2 pos, ImU32 start_color, ImU32 end_color);
+    IMGUI_API void  RenderGradientTextCentered(const char* text, ImU32 start_color, ImU32 end_color);
 
+    // Menu Components
+    IMGUI_API void  CategoryHeader(const char* label, const ImVec4& theme_color, float menu_alpha);
+    IMGUI_API bool  SubCategoryButton(const char* label, bool selected, ImVec4 theme_color);
+
+    // Visual Effects
+    IMGUI_API void  DrawDetailedSnowflake(ImDrawList* draw_list, ImVec2 center, float size, float rotation, ImVec4 color, int variant);
     IMGUI_API void          EndChild();
-
+    // CORRECT (Just tells the compiler it exists somewhere)
+    extern IMGUI_API ImVec4 ThemeColor;
     // Windows Utilities
     // - 'current window' = the window we are appending into while inside a Begin()/End() block. 'next window' = next window we will Begin() into.
     IMGUI_API bool          IsWindowAppearing();
@@ -576,7 +587,7 @@ namespace ImGui
     IMGUI_API bool          Combo(const char* label, int* current_item, const char* const items[], int items_count, int popup_max_height_in_items = -1);
     IMGUI_API bool          Combo(const char* label, int* current_item, const char* items_separated_by_zeros, int popup_max_height_in_items = -1);      // Separate items with \0 within a string, end item-list with \0\0. e.g. "One\0Two\0Three\0"
     IMGUI_API bool          Combo(const char* label, int* current_item, const char* (*getter)(void* user_data, int idx), void* user_data, int items_count, int popup_max_height_in_items = -1);
-
+    IMGUI_API bool SearchableCombo(const char* label, int* current_item, const char* const items[], int items_count, char* text_buffer, size_t text_buffer_size, float width = 0.0f);
     // Widgets: Drag Sliders
     // - CTRL+Click on any drag box to turn them into an input box. Manually input values aren't clamped by default and can go off-bounds. Use ImGuiSliderFlags_AlwaysClamp to always clamp.
     // - For all the Float2/Float3/Float4/Int2/Int3/Int4 versions of every function, note that a 'float v[X]' function argument is the same as 'float* v',
@@ -615,6 +626,7 @@ namespace ImGui
     IMGUI_API bool          SliderAngle(const char* label, float* v_rad, float v_degrees_min = -360.0f, float v_degrees_max = +360.0f, const char* format = "%.0f deg", ImGuiSliderFlags flags = 0);
     IMGUI_API bool          SliderInt(const char* label, int* v, int v_min, int v_max, const char* format = "%d", ImGuiSliderFlags flags = 0);
     IMGUI_API bool          CustomSliderInt(const char* label, int* v, int v_min, int v_max, const char* format = "%d", ImGuiSliderFlags flags = 0);
+    IMGUI_API bool          CustomSliderFloat(const char* label, float* v, float v_min, float v_max, const char* format = "%d", ImGuiSliderFlags flags = 0);
     IMGUI_API bool          SliderInt2(const char* label, int v[2], int v_min, int v_max, const char* format = "%d", ImGuiSliderFlags flags = 0);
     IMGUI_API bool          SliderInt3(const char* label, int v[3], int v_min, int v_max, const char* format = "%d", ImGuiSliderFlags flags = 0);
     IMGUI_API bool          SliderInt4(const char* label, int v[4], int v_min, int v_max, const char* format = "%d", ImGuiSliderFlags flags = 0);

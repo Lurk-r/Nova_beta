@@ -19,7 +19,7 @@ namespace Cheat
     {
         // Init
         IL2CPP::INIT();
-        Logger::log<ConsoleColor::Info>("Initializing hooks...");
+        //Logger::log<ConsoleColor::Info>("Initializing hooks...");
 
         // Patterns
         Patterns::Init();
@@ -31,7 +31,7 @@ namespace Cheat
         PixelTime::Init();
         Socket::Init();
 
-        Logger::log<ConsoleColor::Info>("Hooks initialized!");
-        ImGui::InsertNotification({ ImGuiToastType::Info, 12000, "Clan Utils v1 Loaded, press RCTRL to open/close menu" });
+        //Logger::log<ConsoleColor::Info>("Hooks initialized!");
+        ImGui::InsertNotification({ ImGuiToastType::Info, 12000, "Nigger Loaded, press RCTRL to open/close menu" });
     }
 }
