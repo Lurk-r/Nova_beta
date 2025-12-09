@@ -30,7 +30,6 @@ void AttachHook(void* pointer, Func* detour, Func** original)
         return;
 
     MH_STATUS status = MH_CreateHook(pointer, (LPVOID)detour, (LPVOID*)original);
-    LogMinHookResult(status, "creating hook", pointer);
 
     if (status != MH_OK)
         return;

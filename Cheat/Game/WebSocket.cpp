@@ -1,12 +1,15 @@
 #include "WebSocket.hpp"
+
 #include <string_view>
 #include <wtypes.h>
 #include <iostream>
+
 #include "Data/Structs.hpp"
-#include <Obfusheader.hpp>
-#include "../Utils/Il2CppHelper.hpp"
 #include "Pointers/Pointers.hpp"
 #include "Websocket/WSHelpers.hpp"
+#include "../Utils/Il2CppHelper.hpp"
+
+#include <Obfusheader.hpp>
 #include <ImGui/Notify/imgui_notify.hpp>
 
 namespace WebSocket
@@ -31,12 +34,17 @@ namespace WebSocket
             return socketCommand;
         }
 
-        void SendCommand(const json& data, const std::function<void(Structs::Socket::Response)>& OnRequestReceived, bool ForceExecute)
+        void SendCommand(json data, const std::function<void(Structs::Socket::Response)>& OnRequestReceived, bool ForceExecute)
         {
             if (!data.is_array()) return;
+            if (!Pointers::SocketInstance)
+            {
+                ImGui::InsertNotification({ ImGuiToastType::Warning, 3000, (OBF("Socket is not active!")) });
+                return;
+            }
+
             int req_id = WSFunctions::Random(1000, 10000);
-            json request = data[1];
-            request[OBF("req_id")] = req_id;
+            data[1][OBF("req_id")] = req_id;
 
             Structs::Socket::Response ResponseData;
             ResponseData.request = data[1];
@@ -67,7 +75,9 @@ namespace WebSocket
         {
             if (instance)
             {
-                std::string eventStr = eventName->ToString();
+                Pointers::SocketInstance = instance; // we get this always since the instance changes when we switch characters
+
+                const std::string eventStr = eventName->ToString();
                 json encodedArgs = json::parse(Pointers::Json::Encode((IL2CPP::Object*)args)->ToString());
                 json& data = encodedArgs[0];
 
@@ -85,8 +95,8 @@ namespace WebSocket
 
             if (packet->EventName && packet->IsDecoded)
             {
-                std::string eventName = packet->EventName->ToString();
-                std::string decodedArgs = Pointers::Json::Encode(packet->DecodedArgs)->ToString();
+                const std::string eventName = packet->EventName->ToString();
+                const std::string decodedArgs = Pointers::Json::Encode(packet->DecodedArgs)->ToString();
                 json Data = json::parse(decodedArgs);
 
                 // On Request Received

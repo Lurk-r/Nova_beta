@@ -259,5 +259,4 @@ namespace ImGui {
         }
         PopFont();
     }
-
 }

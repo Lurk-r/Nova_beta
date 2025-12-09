@@ -18,7 +18,7 @@ bool InitializeMinHook()
     if (status != MH_OK)
     {
 #ifdef _DEBUG
-        //Logger::Error("Error initializing MinHook: {}", status);
+        Logger::Error("Error initializing MinHook");
 #endif
         return false;
     }
@@ -30,7 +30,7 @@ void LogMinHookResult(MH_STATUS status, const char* context, void* pointer)
 #ifdef _DEBUG
     if (status != MH_OK)
     {
-        //Logger::Error("Error {} function at {}: {}", context, pointer, status);
+        Logger::Error("Error {} function at {}", context, pointer);
     }
     else
     {

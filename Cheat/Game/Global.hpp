@@ -5,8 +5,8 @@ namespace Global
 {
 	namespace PixelTime
 	{
-		extern void(*PixelTime_o)(IL2CPP::Object*);
-		void PixelTime(IL2CPP::Object*);
+		extern void(*Update_o)(IL2CPP::Object*);
+		void Update(IL2CPP::Object*);
 
 		void Init();
 	}

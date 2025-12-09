@@ -288,14 +288,15 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
                     {
                     case S_BASIC:
                     {
-                        ImGui::BeginGroup();
+                        ImGui::BeginGroup(); // Col 1
                         {
                             if (ImGui::BeginCustomChild("Currency", ImVec2(colWidth, 185)))
                             {
                                 float availWidth = ImGui::GetContentRegionAvail().x;
                                 float halfWidth = (availWidth - ImGui::GetStyle().ItemSpacing.x) / 2.f;
 
-                                ImGui::Combo(OBF("Type"), &Variables::Websocket::m_iCurrencyType, Lists::m_ccCurrencies.data(), Lists::m_ccCurrencies.size(), 4);
+                                ImGui::Combo(OBF("Type"), &Variables::Websocket::m_iCurrencyType,
+                                    Lists::Websocket::m_ccCurrencies.data(), Lists::Websocket::m_ccCurrencies.size(), 4);
                                 ImGui::Text(OBF("Amount"));
                                 ImGui::CustomInputInt(OBF("##currencyAmount"), "", &Variables::Websocket::m_iCurrencyAmount, 0, 0, ImGuiInputFlags_None, availWidth);
                                 if (ImGui::CustomButton(OBF("##addCurrency"), OBF("Add Currency"), halfWidth, 30)) { Variables::Websocket::m_bAddCurrency = true; }
@@ -303,12 +304,19 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
                                 if (ImGui::CustomButton(OBF("##spendCurrency"), OBF("Spend Currency"), halfWidth, 30)) { Variables::Websocket::m_bSpendCurrency = true; }
                             }
                             ImGui::EndCustomChild();
+                        }
+                        ImGui::EndGroup();
 
+                        ImGui::SameLine(0, childGap);
+
+                        ImGui::BeginGroup(); // Col 2
+                        {
                             if (ImGui::BeginCustomChild("Consumables", ImVec2(colWidth, 185)))
                             {
                                 float availWidth = ImGui::GetContentRegionAvail().x;
 
-                                ImGui::Combo(OBF("Type"), &Variables::Websocket::m_iConsumableType, Lists::m_ccConsumables.data(), Lists::m_ccConsumables.size(), 4);
+                                ImGui::Combo(OBF("Type"), &Variables::Websocket::m_iConsumableType,
+                                    Lists::Websocket::m_ccConsumables.data(), Lists::Websocket::m_ccConsumables.size(), 4);
                                 ImGui::Text(OBF("Amount"));
                                 ImGui::CustomInputInt(OBF("##consumableAmount"), "", &Variables::Websocket::m_iConsumableAmount, 0, 0, ImGuiInputFlags_None, availWidth);
                                 if (ImGui::CustomButton(OBF("##addConsumable"), OBF("Add Consumable"), availWidth, 30)) { Variables::Websocket::m_bAddConsumable = true; }
@@ -323,7 +331,6 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
                         ImGui::BeginGroup();
                         {
    
-                            ImGui::EndCustomChild();
                         }
                         ImGui::EndGroup();
                     }
