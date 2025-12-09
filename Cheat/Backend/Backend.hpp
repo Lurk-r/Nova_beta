@@ -31,7 +31,8 @@
 
 #include "../Game/Data/Lists.hpp"
 #include "../Game/Data/Structs.hpp"
-#include "../Game/Data/Variables.hpp"
+
+#include "../Variables/Variables.hpp"
 
 #include <ImGui/imgui.hpp>
 #include <ImGui/imgui_internal.hpp>

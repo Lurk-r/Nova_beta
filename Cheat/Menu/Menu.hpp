@@ -103,7 +103,7 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
     }
 
     // Background Dim
-    if (MenuAlpha > 0.0f && DimAlpha > 0.0f && Variables::Background) {
+    if (MenuAlpha > 0.0f && DimAlpha > 0.0f /*&& Variables::Background*/) {
         ImGui::GetBackgroundDrawList()->AddRectFilled({ 0.f, 0.f }, ImGui::GetIO().DisplaySize, ImColor(0.0f, 0.0f, 0.0f, DimAlpha));
     }
 
@@ -252,7 +252,7 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
                     std::ostringstream time_ss; time_ss << std::put_time(&tm, "%I:%M:%S %p");
                     std::string time_str = "Time: " + time_ss.str();
                     std::string framerate_str = "Framerate: " + std::to_string((int)ImGui::GetIO().Framerate);
-                    std::string version_str = "Game Version: " + Variables::GameVersion;
+                    std::string version_str = "Game Version: " /*+ Variables::GameVersion*/;
 
                     ImVec2 time_size = ImGui::CalcTextSize(time_str.c_str());
                     ImVec2 framerate_size = ImGui::CalcTextSize(framerate_str.c_str());
@@ -295,12 +295,12 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
                                 float availWidth = ImGui::GetContentRegionAvail().x;
                                 float halfWidth = (availWidth - ImGui::GetStyle().ItemSpacing.x) / 2.f;
 
-                                ImGui::Combo(OBF("Type"), &Variables::CurrencyType, Lists::CurrencyList.data(), Lists::CurrencyList.size(), 4);
+                                ImGui::Combo(OBF("Type"), &Variables::Websocket::m_iCurrencyType, Lists::m_ccCurrencies.data(), Lists::m_ccCurrencies.size(), 4);
                                 ImGui::Text(OBF("Amount"));
-                                ImGui::CustomInputInt(OBF("##currencyAmount"), "", &Variables::CurrencyAmount, 0, 0, ImGuiInputFlags_None, availWidth);
-                                if (ImGui::CustomButton(OBF("##addCurrency"), OBF("Add Currency"), halfWidth, 30)) { Variables::AddCurrency = true; }
+                                ImGui::CustomInputInt(OBF("##currencyAmount"), "", &Variables::Websocket::m_iCurrencyAmount, 0, 0, ImGuiInputFlags_None, availWidth);
+                                if (ImGui::CustomButton(OBF("##addCurrency"), OBF("Add Currency"), halfWidth, 30)) { Variables::Websocket::m_bAddCurrency = true; }
                                 ImGui::SameLine();
-                                if (ImGui::CustomButton(OBF("##spendCurrency"), OBF("Spend Currency"), halfWidth, 30)) { Variables::SpendCurrency = true; }
+                                if (ImGui::CustomButton(OBF("##spendCurrency"), OBF("Spend Currency"), halfWidth, 30)) { Variables::Websocket::m_bSpendCurrency = true; }
                             }
                             ImGui::EndCustomChild();
 
@@ -308,49 +308,10 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
                             {
                                 float availWidth = ImGui::GetContentRegionAvail().x;
 
-                                ImGui::Combo(OBF("Type"), &Variables::ConsumableType, Lists::ConsumableList.data(), Lists::ConsumableList.size(), 4);
+                                ImGui::Combo(OBF("Type"), &Variables::Websocket::m_iConsumableType, Lists::m_ccConsumables.data(), Lists::m_ccConsumables.size(), 4);
                                 ImGui::Text(OBF("Amount"));
-                                ImGui::CustomInputInt(OBF("##consumableAmount"), "", &Variables::ConsumableAmount, 0, 0, ImGuiInputFlags_None, availWidth);
-                                if (ImGui::CustomButton(OBF("##addConsumable"), OBF("Add Consumable"), availWidth, 30)) { Variables::AddConsumable = true; }
-                            }
-                            ImGui::EndCustomChild();
-                        }
-                        ImGui::EndGroup();
-
-                        ImGui::SameLine(0, childGap);
-
-                        ImGui::BeginGroup();
-                        {
-                            if (ImGui::BeginCustomChild("Monthly Stats", ImVec2(colWidth, 230)))
-                            {
-                                float availWidth = ImGui::GetContentRegionAvail().x;
-
-                                ImGui::Text(OBF("Kills")); ImGui::CustomInputInt(OBF("##kills"), "", &Variables::Kills, 0, 0, ImGuiInputFlags_None, availWidth);
-                                ImGui::Text(OBF("Deaths")); ImGui::CustomInputInt(OBF("##deaths"), "", &Variables::Deaths, 0, 0, ImGuiInputFlags_None, availWidth);
-                                // Removed other stats to fit, or you can make the child taller and others smaller
-                                if (ImGui::CustomButton(OBF("##updateStats"), OBF("Update Stats"), availWidth, 30)) { Variables::MonthlyStats = true; }
-                            }
-                            ImGui::EndCustomChild();
-
-                            if (ImGui::BeginCustomChild("Wins Adder", ImVec2(colWidth, 160)))
-                            {
-                                float availWidth = ImGui::GetContentRegionAvail().x;
-                                ImGui::Combo(OBF("Game Mode"), &Variables::GameMode, Lists::GameModesList.data(), Lists::GameModesList.size(), 6);
-                                ImGui::Text(OBF("Amount"));
-                                ImGui::CustomInputInt(OBF("##winsAmount"), "", &Variables::WinsAmount, 0, 0, ImGuiInputFlags_None, availWidth);
-                                if (ImGui::CustomButton(OBF("##addWins"), OBF("Add Wins"), availWidth, 30)) { Variables::AddWin = true; }
-                            }
-                            ImGui::EndCustomChild();
-
-                            if (ImGui::BeginCustomChild("Upgrade Clan", ImVec2(colWidth, 90)))
-                            {
-                                float availWidth = ImGui::GetContentRegionAvail().x;
-                                float halfWidth = (availWidth - ImGui::GetStyle().ItemSpacing.x) / 2.f;
-
-                                ImGui::CustomSliderInt(OBF("Level"), &Variables::ClanLevel, 2, 10, "%d", ImGuiSliderFlags_None);
-                                if (ImGui::CustomButton(OBF("##setFort"), OBF("Set Fort Level"), halfWidth, 30)) { Variables::SetClanFort = true; }
-                                ImGui::SameLine();
-                                if (ImGui::CustomButton(OBF("##setTank"), OBF("Set Tank Level"), halfWidth, 30)) { Variables::SetClanTank = true; }
+                                ImGui::CustomInputInt(OBF("##consumableAmount"), "", &Variables::Websocket::m_iConsumableAmount, 0, 0, ImGuiInputFlags_None, availWidth);
+                                if (ImGui::CustomButton(OBF("##addConsumable"), OBF("Add Consumable"), availWidth, 30)) { Variables::Websocket::m_bAddConsumable = true; }
                             }
                             ImGui::EndCustomChild();
                         }
@@ -361,80 +322,7 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
                     {
                         ImGui::BeginGroup();
                         {
-                            if (ImGui::BeginCustomChild("Account", ImVec2(colWidth, 187)))
-                            {
-                                float availWidth = ImGui::GetContentRegionAvail().x;
-                                ImGui::Combo(OBF("Clan Rank"), &Variables::ClanRank, Lists::ClanRanks.data(), Lists::ClanRanks.size(), 4);
-                                ImGui::Text(OBF("Rank Points")); ImGui::CustomInputInt(OBF("##rankPoints"), "", &Variables::RankPoints, 0, 0, ImGuiInputFlags_None, availWidth);
-                                if (ImGui::CustomButton(OBF("##setClanRank"), OBF("Set Rank"), availWidth, 30)) { Variables::SetRank = true; }
-                            }
-                            ImGui::EndCustomChild();
-
-                            if (ImGui::BeginCustomChild("Clan Logo Editor", ImVec2(colWidth, 135)))
-                            {
-                                float availWidth = ImGui::GetContentRegionAvail().x;
-                                ImGui::Combo(OBF("Type"), &Variables::LogoType, Lists::LogoList.data(), Lists::LogoList.size(), 4);
-                                if (ImGui::CustomButton(OBF("##editClan"), OBF("Edit Clan Logo"), availWidth, 30)) { Variables::EditClanLogo = true; }
-                            }
-                            ImGui::EndCustomChild();
-
-                            if (ImGui::BeginCustomChild("Clan Name Changer", ImVec2(colWidth, 170)))
-                            {
-                                float availWidth = ImGui::GetContentRegionAvail().x;
-                                static ImVec4 sel_col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-                                ImGui::Text(OBF("Clan Name")); if (ImGui::ColorEdit3(OBF("##clannamecolorpicker"), (float*)&sel_col)) {}
-                                char code[9]; snprintf(code, sizeof(code), "[%02X%02X%02X]", (int)(sel_col.x * 255), (int)(sel_col.y * 255), (int)(sel_col.z * 255));
-                                ImGui::CustomInputText(OBF("##clannamecolor"), "", availWidth, Variables::ClanNameColor, 5000, ImGuiInputFlags_None);
-                                if (ImGui::CustomButton(OBF("##editClanName"), OBF("Edit Clan Name"), availWidth, 30))
-                                {
-                                    char final[21]; int rem = 20 - (int)strlen(code); if (rem > 0) snprintf(final, sizeof(final), "%s%.*s", code, rem, Variables::ClanNameColor); else strncpy(final, code, sizeof(final) - 1);
-                                    final[sizeof(final) - 1] = '\0'; strncpy(Variables::ClanNameColor, final, sizeof(Variables::ClanNameColor) - 1); Variables::ClanNameColor[sizeof(Variables::ClanNameColor) - 1] = '\0'; Variables::EditClanName = true;
-                                }
-                                ImGui::Text(OBF("12 Letter Max"));
-                            }
-                            ImGui::EndCustomChild();
-                        }
-                        ImGui::EndGroup();
-
-                        ImGui::SameLine(0, childGap);
-
-                        ImGui::BeginGroup();
-                        {
-                            if (ImGui::BeginCustomChild("Modules", ImVec2(colWidth, 230)))
-                            {
-                                float availWidth = ImGui::GetContentRegionAvail().x;
-                                float halfWidth = (availWidth - ImGui::GetStyle().ItemSpacing.x) / 2.f;
-
-                                ImGui::Combo(OBF("Select Module"), &Variables::ModuleType, Lists::ModuleList.data(), Lists::ModuleList.size(), 8);
-                                ImGui::Text(OBF("Module Amount"));
-                                ImGui::CustomInputInt(OBF("##moduleAmount"), "", &Variables::ModuleAmount, 0, 0, ImGuiInputFlags_None, availWidth);
-                                if (ImGui::CustomButton(OBF("##addModule"), OBF("Add Module"), halfWidth, 30)) { Variables::AddModule = true; }
-                                ImGui::SameLine();
-                                if (ImGui::CustomButton(OBF("##addAllModule"), OBF("Add All"), halfWidth, 30)) { Variables::AddAllModules = true; }
-                                if (ImGui::CustomButton(OBF("##upgradeModule"), OBF("Upgrade Module"), halfWidth, 30)) { Variables::CheckSlots[1] = true; }
-                                ImGui::SameLine();
-                                if (ImGui::CustomButton(OBF("##upgradeAllModules"), OBF("Upgrade All"), halfWidth, 30)) { Variables::CheckSlots[2] = true; }
-                                ImGui::CustomSliderInt(OBF("Level Increaser"), &Variables::ModuleLevel, 1, 9, "%d", ImGuiSliderFlags_None);
-                            }
-                            ImGui::EndCustomChild();
-
-                            if (ImGui::BeginCustomChild("Level", ImVec2(colWidth, 128)))
-                            {
-                                float availWidth = ImGui::GetContentRegionAvail().x;
-                                ImGui::CustomSliderInt(OBF("Level"), &Variables::AdderLevel, 1, 65, "%d", ImGuiSliderFlags_None);
-                                if (ImGui::CustomButton(OBF("##setLevel"), OBF("Set Level"), availWidth, 30)) { Variables::SetLevel = true; }
-                                ImGui::Text(OBF("Level Rewards after getting XP"));
-                            }
-                            ImGui::EndCustomChild();
-
-                            if (ImGui::BeginCustomChild("Player Info", ImVec2(colWidth, 100)))
-                            {
-                                std::string PlayerLevelString = std::to_string(Variables::PlayerLevel);
-                                ImGui::Text(OBF("Player ID: %s"), Variables::PlayerID.c_str());
-                                ImGui::Text(OBF("Player Nick: %s"), Variables::PlayerUsername.c_str());
-                                ImGui::Text(OBF("Player Level: %s"), PlayerLevelString.c_str());
-                                ImGui::Text(OBF("Game Version: %s"), Variables::GameVersion.c_str());
-                            }
+   
                             ImGui::EndCustomChild();
                         }
                         ImGui::EndGroup();
@@ -449,81 +337,12 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
                     {
                     case S_MISC:
                     {
-                        if (ImGui::BeginCustomChild("Socket", ImVec2(contentWidth, 290)))
-                        {
-                            float availWidth = ImGui::GetContentRegionAvail().x;
-                            ImGui::Text(OBF("Event Name")); ImGui::CustomInputText(OBF("##eventName"), "", availWidth, Variables::EventInput, 100, ImGuiInputFlags_None);
-                            ImGui::Text(OBF("Command")); ImGui::CustomInputText(OBF("##command"), "", availWidth, Variables::CommandInput, 1000000, ImGuiInputFlags_None);
-                            ImGui::Spacing();
-                            if (ImGui::CustomButton(OBF("##sendCommand"), OBF("Send Command"), availWidth, 30)) { Variables::SendCommand = true; }
-                            if (ImGui::CustomButton(OBF("##reload"), OBF("Reload Socket"), availWidth, 30)) { Variables::ReloadSocket = true; }
-                            ImGui::Spacing();
-                            ImGui::CustomCheckbox(OBF("Auto-Reload"), &Variables::AutoReload);
-                            ImGui::CustomCheckbox(OBF("Log Websocket"), &Variables::LogWebsocket);
-                            ImGui::TextDisabled(OBF("Do not use custom commands if you do not know what you are doing."));
-                        }
-                        ImGui::EndCustomChild();
 
-                        if (ImGui::BeginCustomChild("Socials", ImVec2(contentWidth, 110)))
-                        {
-                            float availWidth = ImGui::GetContentRegionAvail().x;
-                            if (ImGui::CustomButton(OBF("##yt"), OBF("YouTube"), availWidth, 30)) { ShellExecuteA(NULL, "open", "https://youtube.com/@mrbeast", 0, 0, SW_SHOWNORMAL); }
-                            if (ImGui::CustomButton(OBF("##dsc"), OBF("Discord"), availWidth, 30)) { ShellExecuteA(NULL, "open", "https://discord.gg/voidpg", 0, 0, SW_SHOWNORMAL); }
-                        }
-                        ImGui::EndCustomChild();
-
-                        if (ImGui::BeginCustomChild("Menu", ImVec2(contentWidth, 125)))
-                        {
-                            ImGui::CustomCheckbox(OBF("Draw Ash"), &Variables::Snowflakes);
-                            ImGui::CustomCheckbox(OBF("Background Dim"), &Variables::Background);
-                            ImGui::SliderFloat(OBF("Dim Amount"), &Variables::DimAmmount, 0.f, 2.f);
-                        }
-                        ImGui::EndCustomChild();
                     }
                     break;
                     case S_TEST:
                     {
-                        if (ImGui::BeginCustomChild("Info", ImVec2(contentWidth, 75)))
-                        {
-                            ImGui::Text(OBF("Test Features, Working but will receive updates"));
-                        }
-                        ImGui::EndCustomChild();
-
-                        ImGui::BeginGroup();
-                        {
-                            if (ImGui::BeginCustomChild("Clan Features", ImVec2(colWidth, 247)))
-                            {
-                                float availWidth = ImGui::GetContentRegionAvail().x;
-                                float halfWidth = (availWidth - ImGui::GetStyle().ItemSpacing.x) / 2.f;
-
-                                ImGui::CustomSliderInt(OBF("Valor Amount"), &Variables::ValorAmount, 1, 499, "%d", ImGuiSliderFlags_None);
-                                ImGui::CustomSliderInt(OBF("Repeats"), &Variables::ValorRepeats, 1, 500000, "%d", ImGuiSliderFlags_None);
-                                if (ImGui::CustomButton(OBF("##addValor"), OBF("Try to Add Valor"), halfWidth, 30)) { Variables::AddValor = true; }
-                                if (ImGui::CustomButton(OBF("##clanTaskCompleter"), OBF("Clan Tasks Completer"), halfWidth, 30)) { Variables::CompleteClanTasks = true; }
-                                ImGui::Text(OBF("WARNING!! Sabotage Features below"));
-                                if (ImGui::CustomButton(OBF("bugclanfort"), OBF("Bug Clan Fort"), halfWidth, 30)) { Variables::BugClanFort = true; }
-                                if (ImGui::CustomButton(OBF("unbugclanfort"), OBF("Unbug Clan Fort"), halfWidth, 30)) { Variables::UnBugClanFort = true; }
-                            }
-                            ImGui::EndCustomChild();
-                        }
-                        ImGui::EndGroup();
-
-                        ImGui::SameLine(0, childGap);
-
-                        ImGui::BeginGroup();
-                        {
-                            if (ImGui::BeginCustomChild("Goblin Adder", ImVec2(colWidth, 170)))
-                            {
-                                float halfWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) / 2.f;
-
-                                ImGui::CustomSliderInt(OBF("Days of Clan Goblin"), &Variables::GoblinDays, 1, 100, "%d", ImGuiSliderFlags_None);
-                                if (ImGui::CustomButton(OBF("addpositivegoblin"), OBF("Add Days"), halfWidth, 30)) { Variables::SetGoblinsPositive = true; }
-                                ImGui::SameLine();
-                                if (ImGui::CustomButton(OBF("addnegativegoblin"), OBF("Remove Days"), halfWidth, 30)) { Variables::SetGoblinsNegative = true; }
-                            }
-                            ImGui::EndCustomChild();
-                        }
-                        ImGui::EndGroup();
+ 
                     }
                     break;
                     }
@@ -539,7 +358,7 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
     }
 
     // Snowflakes Rendering
-    if (MenuAlpha > 0.f && Variables::Snowflakes)
+    if (MenuAlpha > 0.f /*&& Variables::Snowflakes*/)
     {
         auto bg_draw_list = ImGui::GetBackgroundDrawList();
         auto time = ImGui::GetTime();

@@ -33,9 +33,6 @@
     <ClInclude Include="Game\Data\Structs.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Game\Data\Variables.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Game\Functions\Functions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -63,13 +60,25 @@
     <ClInclude Include="Utils\Il2CppHelper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Game\PixelTime.hpp">
+    <ClInclude Include="Game\Websocket\WSHelpers.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Game\Socket.hpp">
+    <ClInclude Include="Variables\Variables.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Game\Commands.hpp">
+    <ClInclude Include="Game\Websocket\Commands.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Data\Enums.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Global.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\WebSocket.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Pointers\PointerWrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -81,6 +90,42 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Backend\Backend.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Websocket\WSHelpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Variables\Variables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Websocket\Commands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Data\Lists.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Global.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Hooks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\WebSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Il2CppHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Pointers\Pointers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Pointers\PointerWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Data\Patterns.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

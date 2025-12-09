@@ -29,13 +29,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -175,28 +175,43 @@
   <ItemGroup>
     <ClInclude Include="Cheat.hpp" />
     <ClInclude Include="Backend\Backend.hpp" />
-    <ClInclude Include="Game\Commands.hpp" />
+    <ClInclude Include="Game\Data\Enums.hpp" />
+    <ClInclude Include="Game\Websocket\Commands.hpp" />
     <ClInclude Include="Game\Data\Indexes.hpp" />
     <ClInclude Include="Game\Data\Lists.hpp" />
     <ClInclude Include="Game\Data\Patterns.hpp" />
     <ClInclude Include="Game\Data\Structs.hpp" />
-    <ClInclude Include="Game\Data\Variables.hpp" />
     <ClInclude Include="Game\Functions\Functions.hpp" />
     <ClInclude Include="Game\Pointers\Pointers.hpp" />
+    <ClInclude Include="Game\Global.hpp" />
     <ClInclude Include="Menu\Font\Byte.hpp" />
     <ClInclude Include="Menu\Font\FontAwesome.hpp" />
     <ClInclude Include="Menu\Menu.hpp" />
     <ClInclude Include="Menu\Snowflake.hpp" />
+    <ClInclude Include="Game\Pointers\PointerWrapper.hpp" />
     <ClInclude Include="Utils\Hooks.hpp" />
     <ClInclude Include="Utils\Il2CppHelper.hpp" />
     <ClInclude Include="Utils\Utils.hpp" />
-    <ClInclude Include="Game\PixelTime.hpp" />
-    <ClInclude Include="Game\Socket.hpp" />
+    <ClInclude Include="Game\Websocket\WSHelpers.hpp" />
+    <ClInclude Include="Variables\Variables.hpp" />
+    <ClInclude Include="Game\WebSocket.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Cheat.cpp" />
     <ClCompile Include="Backend\Backend.cpp" />
+    <ClCompile Include="Game\Data\Lists.cpp" />
+    <ClCompile Include="Game\Data\Patterns.cpp" />
+    <ClCompile Include="Game\Pointers\Pointers.cpp" />
+    <ClCompile Include="Game\Websocket\Commands.cpp" />
     <ClCompile Include="DllMain.cpp" />
+    <ClCompile Include="Game\Websocket\WSHelpers.cpp" />
+    <ClCompile Include="Game\Global.cpp" />
+    <ClCompile Include="Game\Pointers\PointerWrapper.cpp" />
+    <ClCompile Include="Utils\Hooks.cpp" />
+    <ClCompile Include="Utils\Il2CppHelper.cpp" />
+    <ClCompile Include="Utils\Utils.cpp" />
+    <ClCompile Include="Variables\Variables.cpp" />
+    <ClCompile Include="Game\WebSocket.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

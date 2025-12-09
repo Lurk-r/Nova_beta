@@ -19,12 +19,12 @@ Visit https://github.com/ac3ss0r/obfusheader.h for configuration tips & more inf
 
 #pragma region CONFIG
 // C++ only features
-#define CONST_ENCRYPTION            0
+#define CONST_ENCRYPTION            1
 #define CONST_ENCRYPT_MODE          NORMAL // NORMAL & THREADLOCAL
-#define CFLOW_CONST_DECRYPTION      0
+#define CFLOW_CONST_DECRYPTION      1
 // C & C++ features
-#define CFLOW_BRANCHING             0
-#define INDIRECT_BRANCHING          0
+#define CFLOW_BRANCHING             1
+#define INDIRECT_BRANCHING          1
 #define FAKE_SIGNATURES             0
 #define INLINE_STD                  0
 #define KERNEL_MODE                 0
@@ -277,6 +277,17 @@ static void obfusheader_decoy_10() { obfusheader_decoy_main(); }
 #define MAKEOBF_NORMAL(x) OBF_KEY_NORMAL(x, obf::clean_type<decltype(obf::gettype(x))>, obf::getsize(x), (char)RND(1, 255))
 #define MAKEOBF_THREADLOCAL(x) OBF_KEY_THREADLOCAL(x, obf::clean_type<decltype(obf::gettype(x))>, obf::getsize(x), (char)RND(1, 255))
 
+#if defined(_DEBUG)
+
+// Debug does not use obfuscation
+#undef MAKEOBF
+#undef OBF
+#define MAKEOBF(x) x
+#define OBF(x) x
+
+#else
+
+// Release uses obfuscation
 #if CONST_ENCRYPTION
 #if CONST_ENCRYPT_MODE == NORMAL
 #define MAKEOBF(x) MAKEOBF_NORMAL(x)
@@ -287,6 +298,8 @@ static void obfusheader_decoy_10() { obfusheader_decoy_main(); }
 #else
 #define MAKEOBF(x) x
 #define OBF(x) x
+#endif
+
 #endif
 
 // Pointer-based call hiding (Crossplatform)

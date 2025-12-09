@@ -4,7 +4,7 @@
 
 static const char* PROCESS = "Pixel Gun 3D.exe";
 #ifdef _DEBUG
-static const char* DLL_NAME = "ClanUtilsV1.dll";
+static const char* DLL_NAME = "Nova Client-Debug.dll";
 #else
 static const char* DLL_NAME = "Nova Client-Release.dll";
 #endif

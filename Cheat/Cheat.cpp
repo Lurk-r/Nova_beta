@@ -10,8 +10,8 @@
 
 #include "Game/Pointers/Pointers.hpp"
 
-#include "Game/PixelTime.hpp"
-#include "Game/Socket.hpp"
+#include "Game/Global.hpp"
+#include "Game/WebSocket.hpp"
 
 namespace Cheat
 {
@@ -19,7 +19,7 @@ namespace Cheat
     {
         // Init
         IL2CPP::INIT();
-        //Logger::log<ConsoleColor::Info>("Initializing hooks...");
+        Logger::Info("Initializing hooks...");
 
         // Patterns
         Patterns::Init();
@@ -28,10 +28,10 @@ namespace Cheat
         Pointers::Init();
 
         // Hooks
-        PixelTime::Init();
-        Socket::Init();
+        Global::PixelTime::Init();
+        WebSocket::Socket::Init();
 
-        //Logger::log<ConsoleColor::Info>("Hooks initialized!");
+        Logger::Info("Hooks initialized!");
         ImGui::InsertNotification({ ImGuiToastType::Info, 12000, "Nigger Loaded, press RCTRL to open/close menu" });
     }
 }
