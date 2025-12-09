@@ -10,6 +10,7 @@
 
 #include "Game/Pointers/Pointers.hpp"
 
+#include "Game/Gameplay.hpp"
 #include "Game/Global.hpp"
 #include "Game/WebSocket.hpp"
 
@@ -21,15 +22,20 @@ namespace Cheat
         IL2CPP::INIT();
         Logger::Info("Initializing hooks...");
 
-        // Patterns
         Patterns::Init();
-
-        // Pointers
         Pointers::Init();
 
-        // Hooks
+#pragma region HOOKS
+        // Global
         Global::PixelTime::Init();
+
+        // Websocket
         WebSocket::Socket::Init();
+
+        // Gameplay
+        Gameplay::Player_move_c::Init();
+        Gameplay::WeaponSounds::Init();
+#pragma endregion
 
         Logger::Info("Hooks initialized!");
         ImGui::InsertNotification({ ImGuiToastType::Info, 12000, "Nigger Loaded, press RCTRL to open/close menu" });

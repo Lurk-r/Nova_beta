@@ -175,6 +175,7 @@
   <ItemGroup>
     <ClInclude Include="Cheat.hpp" />
     <ClInclude Include="Backend\Backend.hpp" />
+    <ClInclude Include="Game\Gameplay.hpp" />
     <ClInclude Include="Game\Data\Enums.hpp" />
     <ClInclude Include="Game\Websocket\Commands.hpp" />
     <ClInclude Include="Game\Data\Indexes.hpp" />
@@ -199,6 +200,7 @@
   <ItemGroup>
     <ClCompile Include="Cheat.cpp" />
     <ClCompile Include="Backend\Backend.cpp" />
+    <ClCompile Include="Game\Gameplay.cpp" />
     <ClCompile Include="Game\Data\Lists.cpp" />
     <ClCompile Include="Game\Data\Patterns.cpp" />
     <ClCompile Include="Game\Pointers\Pointers.cpp" />

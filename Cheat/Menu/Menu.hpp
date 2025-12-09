@@ -5,39 +5,29 @@
 #include <Obfusheader.hpp>
 #include <string>
 #include <vector>
+#include <array>
 #include <map>
 #include <Windows.h>
 #include <winreg.h>
 #include <iostream>
 #include <algorithm>
 #include <cmath>
-#include <time.h>
+#include <chrono>
+#include <random>
 #include <sstream>
 #include <iomanip>
 
 // User Placeholders
-namespace stdvoid
-{
+namespace stdvoid {
     inline std::string username = "User";
     inline std::string subscriptionType = "Lifetime";
     inline std::string subscriptionExpiry = "Never";
 }
 
 // Temp Category Location
-enum MainCategory {
-    C_WEBSOCKET,
-    C_SETTINGS
-};
-
-enum WebsocketSubCategory {
-    S_BASIC,
-    S_CLAN
-};
-
-enum SettingsSubCategory {
-    S_MISC,
-    S_TEST
-};
+enum MainCategory { C_WEBSOCKET, C_SETTINGS };
+enum WebsocketSubCategory { S_BASIC, S_CLAN };
+enum SettingsSubCategory { S_MISC, S_TEST };
 
 // Snowflake 
 struct SnowParticle {
@@ -56,13 +46,15 @@ static float DimAlpha = 0.0f;
 static float TargetDimAlpha = 0.8f;
 static float MenuAlpha = 0.0f;
 
-// Heplers
+// Helpers
 template <typename T>
-T Clamp(const T& value, const T& min, const T& max) { return value < min ? min : (value > max ? max : value); }
+constexpr T Clamp(const T& value, const T& min, const T& max) {
+    return std::clamp(value, min, max);
+}
+
 float Lerp(float a, float b, float t) { return a + t * (b - a); }
 
-void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* targetview) const
-{
+void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* targetview) const {
     if (!context || !targetview) return;
 
     ImGui_ImplDX11_NewFrame();
@@ -76,40 +68,42 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
     static int prev_sub_cat = sub_cat;
     static bool ConsoleInitialized = false;
     static bool DelayComplete = false;
-    static float window_rounding = 8.0f;
+    static constexpr float window_rounding = 8.0f;
 
-    if (!ConsoleInitialized && !DelayComplete) { Sleep(1000); DelayComplete = true; }
+    if (!ConsoleInitialized && !DelayComplete) {
+        Sleep(1000);
+        DelayComplete = true;
+    }
+
     if (!ConsoleInitialized && DelayComplete) {
         AllocConsole();
-        freopen("CONOUT$", "w", stdout);
-        freopen("CONOUT$", "w", stderr);
-        freopen("CONIN$", "r", stdin);
+        freopen_s(reinterpret_cast<FILE**>(stdout), "CONOUT$", "w", stdout);
+        freopen_s(reinterpret_cast<FILE**>(stderr), "CONOUT$", "w", stderr);
+        freopen_s(reinterpret_cast<FILE**>(stdin), "CONIN$", "r", stdin);
         std::cout << "Menu has opened Successfully!\n";
         ConsoleInitialized = true;
     }
 
     const float deltaTime = ImGui::GetIO().DeltaTime;
-    const float openSpeed = 14.0f * deltaTime;
-    const float closeSpeed = 9999.0f * deltaTime;
+    constexpr float openSpeedFactor = 14.0f;
+    constexpr float closeSpeedFactor = 9999.0f;
+    const float openSpeed = openSpeedFactor * deltaTime;
+    const float closeSpeed = closeSpeedFactor * deltaTime;
 
-    // Animation State
     if (Features.OpenMenu) {
         DimAlpha = Clamp(DimAlpha + openSpeed, 0.0f, TargetDimAlpha);
         MenuAlpha = Clamp(MenuAlpha + openSpeed, 0.0f, 1.0f);
-    }
-    else {
+    } else {
         DimAlpha = Clamp(DimAlpha - closeSpeed, 0.0f, TargetDimAlpha);
         MenuAlpha = Clamp(MenuAlpha - closeSpeed, 0.0f, 1.0f);
     }
 
     // Background Dim
-    if (MenuAlpha > 0.0f && DimAlpha > 0.0f /*&& Variables::Background*/) {
-        ImGui::GetBackgroundDrawList()->AddRectFilled({ 0.f, 0.f }, ImGui::GetIO().DisplaySize, ImColor(0.0f, 0.0f, 0.0f, DimAlpha));
+    if (MenuAlpha > 0.0f && DimAlpha > 0.0f) {
+        ImGui::GetBackgroundDrawList()->AddRectFilled({0.f, 0.f}, ImGui::GetIO().DisplaySize, ImColor(0.0f, 0.0f, 0.0f, DimAlpha));
     }
 
-    // Main Menu
-    if (MenuAlpha > 0.0f)
-    {
+    if (MenuAlpha > 0.0f) {
         if (prev_main_cat != main_cat || prev_sub_cat != sub_cat) {
             content_anim = 15.f;
             prev_main_cat = main_cat;
@@ -117,10 +111,9 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
         }
         content_anim = ImLerp(content_anim, 0.f, deltaTime * 10.f);
 
-        // Color
-        const ImU32 main_bg_col = IM_COL32(15, 15, 17, (int)(240 * MenuAlpha));
-        const ImU32 sidebar_bg_col = IM_COL32(10, 10, 10, (int)(240 * MenuAlpha));
-        const ImU32 separator_col = IM_COL32(45, 45, 45, (int)(250 * MenuAlpha));
+        const ImU32 main_bg_col = IM_COL32(15, 15, 17, static_cast<int>(240 * MenuAlpha));
+        const ImU32 sidebar_bg_col = IM_COL32(10, 10, 10, static_cast<int>(240 * MenuAlpha));
+        const ImU32 separator_col = IM_COL32(45, 45, 45, static_cast<int>(250 * MenuAlpha));
 
         ImGui::SetNextWindowSize(ImVec2(950, 600));
         ImGui::PushStyleColor(ImGuiCol_WindowBg, main_bg_col);
@@ -364,70 +357,70 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
         ImGui::PopStyleColor();
     }
 
-    // Snowflakes Rendering
-    if (MenuAlpha > 0.f /*&& Variables::Snowflakes*/)
-    {
+    // Snowflake Rendering
+    if (MenuAlpha > 0.f) {
         auto bg_draw_list = ImGui::GetBackgroundDrawList();
-        auto time = ImGui::GetTime();
+        const float time = ImGui::GetTime();
         static bool initialized = false;
         static float wind_time = 0.0f;
+
+        static std::mt19937 rng{ std::random_device{}() };
+        static std::uniform_real_distribution<float> dist01{0.0f, 1.0f};
+
+        const auto screenW = ImGui::GetIO().DisplaySize.x;
+        const auto screenH = ImGui::GetIO().DisplaySize.y;
 
         if (!initialized || snow_particles.empty()) {
             snow_particles.clear();
             snow_particles.reserve(1000);
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 1000; ++i) {
                 SnowParticle flake;
-                flake.pos = ImVec2((float)(rand() % (int)ImGui::GetIO().DisplaySize.x), (float)(rand() % (int)ImGui::GetIO().DisplaySize.y));
-                flake.depth = 0.2f + ((float)rand() / RAND_MAX) * 0.8f;
-                float size_roll = (float)rand() / RAND_MAX;
-                if (size_roll < 0.60f) { flake.size = 1.5f + ((float)rand() / RAND_MAX) * 1.5f; }
-                else if (size_roll < 0.85f) { flake.size = 3.2f + ((float)rand() / RAND_MAX) * 1.3f; }
-                else { flake.size = 4.8f + ((float)rand() / RAND_MAX) * 1.7f; }
-                flake.speed = 40.0f + (flake.size * 12.0f) + ((float)rand() / RAND_MAX) * 30.0f;
-                flake.sway_speed = 0.5f + ((float)rand() / RAND_MAX) * 1.2f;
-                flake.sway_offset = ((float)rand() / RAND_MAX) * 6.28f;
-                flake.wind_resistance = 0.3f + ((float)rand() / RAND_MAX) * 0.7f;
+                flake.pos = ImVec2(dist01(rng) * screenW, dist01(rng) * screenH);
+                flake.depth = 0.2f + dist01(rng) * 0.8f;
+                const float size_roll = dist01(rng);
+                flake.size = (size_roll < 0.6f) ? 1.5f + dist01(rng) * 1.5f
+                    : (size_roll < 0.85f) ? 3.2f + dist01(rng) * 1.3f
+                    : 4.8f + dist01(rng) * 1.7f;
+                flake.speed = 40.0f + flake.size * 12.0f + dist01(rng) * 30.0f;
+                flake.sway_speed = 0.5f + dist01(rng) * 1.2f;
+                flake.sway_offset = dist01(rng) * 6.283185f;
+                flake.wind_resistance = 0.3f + dist01(rng) * 0.7f;
                 snow_particles.push_back(flake);
             }
             initialized = true;
         }
 
         wind_time += deltaTime;
-        float base_wind = 25.0f;
-        float gust_1 = sinf(wind_time * 0.3f) * 20.0f;
-        float gust_2 = sinf(wind_time * 0.8f) * 12.0f;
-        float gust_3 = cosf(wind_time * 0.5f) * 8.0f;
+        const float base_wind = 25.0f;
+        const float gust_1 = std::sinf(wind_time * 0.3f) * 20.0f;
+        const float gust_2 = std::sinf(wind_time * 0.8f) * 12.0f;
+        const float gust_3 = std::cosf(wind_time * 0.5f) * 8.0f;
         float total_wind = base_wind + gust_1 + gust_2 + gust_3;
-        float mega_gust = sinf(wind_time * 0.15f) > 0.7f ? sinf(wind_time * 2.0f) * 15.0f : 0.0f;
+        const float mega_gust = std::sinf(wind_time * 0.15f) > 0.7f ? std::sinf(wind_time * 2.0f) * 15.0f : 0.0f;
         total_wind += mega_gust;
-        float screenW = ImGui::GetIO().DisplaySize.x;
-        float screenH = ImGui::GetIO().DisplaySize.y;
 
         for (auto& flake : snow_particles) {
             flake.pos.y += flake.speed * deltaTime;
-            float wind_push = total_wind * flake.wind_resistance * flake.depth;
-            flake.pos.x += wind_push * deltaTime;
-            float swirl = sinf(time * flake.sway_speed + flake.sway_offset) * 12.0f;
-            flake.pos.x += swirl * deltaTime;
-            if (mega_gust > 5.0f) { flake.pos.y -= mega_gust * 0.3f * flake.wind_resistance * deltaTime; }
+            flake.pos.x += total_wind * flake.wind_resistance * flake.depth * deltaTime;
+            flake.pos.x += std::sinf(time * flake.sway_speed + flake.sway_offset) * 12.0f * deltaTime;
 
-            if (flake.pos.y > screenH + 10) { flake.pos.y = -10; flake.pos.x = (float)(rand() % (int)screenW); }
-            if (flake.pos.x > screenW + 10) { flake.pos.x = -10; flake.pos.y = (float)(rand() % (int)screenH); }
-            if (flake.pos.x < -10) { flake.pos.x = screenW + 10; flake.pos.y = (float)(rand() % (int)screenH); }
+            if (mega_gust > 5.0f)
+                flake.pos.y -= mega_gust * 0.3f * flake.wind_resistance * deltaTime;
 
-            float flicker = 0.9f + sinf(time * 3.0f + flake.sway_offset) * 0.1f;
-            float opacity = (0.65f + (flake.depth * 0.35f)) * flicker;
-            ImU32 snow_color = IM_COL32(255, 255, 255, (int)(opacity * 255 * MenuAlpha));
+            if (flake.pos.y > screenH + 10) flake.pos.y = -10, flake.pos.x = dist01(rng) * screenW;
+            if (flake.pos.x > screenW + 10) flake.pos.x = -10, flake.pos.y = dist01(rng) * screenH;
+            if (flake.pos.x < -10) flake.pos.x = screenW + 10, flake.pos.y = dist01(rng) * screenH;
 
-            if (flake.size >= 4.8f) {
+            const float flicker = 0.9f + std::sinf(time * 3.0f + flake.sway_offset) * 0.1f;
+            const float opacity = (0.65f + flake.depth * 0.35f) * flicker;
+            const ImU32 snow_color = IM_COL32(255, 255, 255, static_cast<int>(opacity * 255 * MenuAlpha));
+
+            if (flake.size >= 4.8f)
                 ImGui::DrawDetailedSnowflake(bg_draw_list, flake.pos, flake.size, 0.0f, ImGui::ColorConvertU32ToFloat4(snow_color), 2);
-            }
-            else if (flake.size >= 3.2f) {
+            else if (flake.size >= 3.2f)
                 ImGui::DrawDetailedSnowflake(bg_draw_list, flake.pos, flake.size, 0.0f, ImGui::ColorConvertU32ToFloat4(snow_color), 1);
-            }
-            else {
+            else
                 bg_draw_list->AddCircleFilled(flake.pos, flake.size, snow_color, 8);
-            }
         }
     }
 
@@ -439,6 +432,6 @@ void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* ta
     ImGui::EndFrame();
     ImGui::Render();
 
-    context->OMSetRenderTargets(1, &targetview, NULL);
+    context->OMSetRenderTargets(1, &targetview, nullptr);
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }

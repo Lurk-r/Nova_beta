@@ -43,7 +43,7 @@ namespace WebSocket
                 return;
             }
 
-            int req_id = WSFunctions::Random(1000, 10000);
+            const int req_id = WSFunctions::Random(1000, 10000);
             data[1][OBF("req_id")] = req_id;
 
             Structs::Socket::Response ResponseData;
