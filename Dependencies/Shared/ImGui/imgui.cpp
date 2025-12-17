@@ -1042,6 +1042,7 @@ CODE
 // System includes
 #include <stdio.h>      // vsnprintf, sscanf, printf
 #include <stdint.h>     // intptr_t
+#include <cmath>        // std::sinf for gradient animation sine waves
 
 // [Windows] On non-Visual Studio compilers, we default to IMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCTIONS unless explicitly enabled
 #if defined(_WIN32) && !defined(_MSC_VER) && !defined(IMGUI_ENABLE_WIN32_DEFAULT_IME_FUNCTIONS) && !defined(IMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCTIONS)
@@ -6050,141 +6051,69 @@ void ImGui::EndChild()
 }
 bool ImGui::BeginCustomChild(const char* str_id, const ImVec2& size_arg, bool sub_tab, ImGuiWindowFlags extra_flags)
 {
-    const float rounding = 8.0f;
-    const float border_thick = 1.0f;
-    const ImVec2 padding = ImVec2(12.0f, 12.0f);
-
-    const ImU32 bg_color = IM_COL32(12, 12, 14, 250);
-
-    const ImU32 border_color = ImGui::ColorConvertFloat4ToU32(
-        ImVec4(ThemeColor.x * 0.35f, ThemeColor.y * 0.35f, ThemeColor.z * 0.35f, 0.6f)
-    );
-
-    const float header_height = 32.0f;
-    const ImU32 header_color = IM_COL32(8, 8, 10, 255);
-
-    const float title_left_pad = 12.0f;
-    const float title_top_pad = 8.0f;
-
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, rounding);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, padding);
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 0, 0, 0));
-
-    bool opened = ImGui::BeginChild(
-        str_id,
-        size_arg,
-        ImGuiChildFlags_AlwaysUseWindowPadding,
-        extra_flags | ImGuiWindowFlags_NoScrollbar
-    );
-
-    ImGui::PopStyleColor(1);
-    ImGui::PopStyleVar(3);
-
-    if (!opened)
-    {
-        ImGui::EndChild();
-        return false;
-    }
-
-    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    ImGuiContext& g = *GImGui;
+    float time = (float)g.Time;
+    ImGuiWindow* window = GetCurrentWindow();
     ImDrawList* draw_list = window->DrawList;
-    const ImVec2 pos = window->Pos;
-    const ImVec2 size = window->Size;
 
-    ImVec4 glow_color = ImVec4(ThemeColor.x * 0.3f, ThemeColor.y * 0.3f, ThemeColor.z * 0.3f, 0.15f);
-    draw_list->AddShadowRect(
-        pos,
-        pos + size,
-        ImGui::ColorConvertFloat4ToU32(glow_color),
-        20.0f,
-        ImVec2(0, 0),
-        ImDrawFlags_RoundCornersAll,
-        rounding
-    );
+    // Layout
+    const float rounding = 12.0f;
+    const float header_height = 32.0f;
+    const float title_left_pad = 12.0f;
 
-    draw_list->AddRectFilled(pos, pos + size, bg_color, rounding);
+    ImVec2 pos = window->DC.CursorPos;
+    ImVec2 size = CalcItemSize(size_arg, 200.f, 200.f);
 
-    draw_list->AddRectFilled(
-        pos,
-        ImVec2(pos.x + size.x, pos.y + header_height),
-        header_color,
-        rounding,
-        ImDrawFlags_RoundCornersTop
-    );
+    // --- COLORS (Dark & Clean) ---
+    ImU32 bg_color = IM_COL32(6, 6, 7, 255); // Pitch black/grey
+    ImU32 header_bg = IM_COL32(12, 12, 14, 255);
+    ImU32 border_color = IM_COL32(35, 35, 40, 255);
 
-    const ImU32 separator_color = ImGui::ColorConvertFloat4ToU32(
-        ImVec4(ThemeColor.x * 0.4f, ThemeColor.y * 0.4f, ThemeColor.z * 0.4f, 0.3f)
-    );
-    draw_list->AddLine(
-        ImVec2(pos.x + 8.0f, pos.y + header_height),
-        ImVec2(pos.x + size.x - 8.0f, pos.y + header_height),
-        separator_color,
-        1.0f
-    );
+    // --- DRAWING ---
+    // 1. Background
+    draw_list->AddRectFilled(pos, pos + size, bg_color, rounding, ImDrawFlags_RoundCornersAll);
 
-    draw_list->AddRect(pos, pos + size, border_color, rounding, 0, border_thick);
+    // 2. Header
+    draw_list->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + header_height), header_bg, rounding, ImDrawFlags_RoundCornersTop);
 
-    ImVec2 title_pos = ImVec2(pos.x + title_left_pad, pos.y + title_top_pad);
+    // 3. Border
+    draw_list->AddRect(pos, pos + size, border_color, rounding, ImDrawFlags_RoundCornersAll, 1.0f);
 
-    ImU32 start_color_u32 = ImGui::ColorConvertFloat4ToU32(
-        ImVec4(
-            ImMin(1.0f, ThemeColor.x * 1.5f),
-            ImMin(1.0f, ThemeColor.y * 1.5f),
-            ImMin(1.0f, ThemeColor.z * 1.5f),
-            1.0f
-        )
-    );
-    ImU32 end_color_u32 = ImGui::ColorConvertFloat4ToU32(
-        ImVec4(ThemeColor.x * 0.8f, ThemeColor.y * 0.8f, ThemeColor.z * 0.8f, 1.0f)
-    );
+    // --- TITLE ---
+    ImGuiIO& io = GetIO();
+    if (io.Fonts->Fonts.Size > 1) PushFont(io.Fonts->Fonts[1]);
+    else PushFont(io.Fonts->Fonts[0]);
 
-    const char* text_start = str_id;
-    const char* text_end = text_start + strlen(text_start);
-    const float total_width = ImGui::CalcTextSize(text_start, text_end).x;
+    SetWindowFontScale(1.0f);
+    ImVec2 text_size = CalcTextSize(str_id);
+    ImVec2 title_pos = ImVec2(pos.x + title_left_pad, pos.y + (header_height - text_size.y) * 0.5f + 1.0f);
 
-    if (total_width > 0.0f)
-    {
-        ImVec4 col_start = ImGui::ColorConvertU32ToFloat4(start_color_u32);
-        ImVec4 col_end = ImGui::ColorConvertU32ToFloat4(end_color_u32);
+    // Gradient Text
+    float gradPhase = CalcGradientPhase(time, AnimTiming::GRADIENT_FREQ_PRIMARY);
+    ImU32 text_start = ColorConvertFloat4ToU32(ImVec4(ImMin(1.f, ThemeColor.x + 0.2f), ImMin(1.f, ThemeColor.y), ImMin(1.f, ThemeColor.z + 0.2f), 1.0f));
+    ImU32 text_end = ColorConvertFloat4ToU32(ImVec4(ThemeColor.x * 0.8f, ThemeColor.y * 0.8f, ThemeColor.z * 0.8f, 1.0f));
+    RenderGradientText(str_id, title_pos, text_start, text_end);
 
-        const char* p = text_start;
-        float current_x_offset = 0.f;
+    PopFont();
 
-        while (p < text_end)
-        {
-            unsigned int c;
-            int c_len = ImTextCharFromUtf8(&c, p, text_end);
-            if (c_len == 0) break;
+    // --- INNER CHILD (Content) ---
+    // Move cursor past header
+    SetCursorPos(ImVec2(pos.x - window->Pos.x, (pos.y - window->Pos.y) + header_height));
 
-            char single_char_buffer[5] = { 0 };
-            memcpy(single_char_buffer, p, c_len);
-            float char_width = ImGui::CalcTextSize(single_char_buffer).x;
+    char child_id[256];
+    snprintf(child_id, 256, "%s##content", str_id);
 
-            float t = (current_x_offset + char_width * 0.5f) / total_width;
-            ImVec4 char_color_v4 = ImLerp(col_start, col_end, t);
-            ImU32 char_color = ImGui::ColorConvertFloat4ToU32(char_color_v4);
+    PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
+    PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 0, 0, 0));
 
-            draw_list->AddText(
-                ImVec2(title_pos.x + current_x_offset, title_pos.y),
-                char_color,
-                single_char_buffer
-            );
+    // ADDED: ImGuiWindowFlags_NoScrollbar to hide the bar visually
+    bool ret = BeginChild(child_id, ImVec2(size.x, size.y - header_height), false, extra_flags | ImGuiWindowFlags_AlwaysUseWindowPadding | ImGuiWindowFlags_NoScrollbar);
 
-            current_x_offset += char_width;
-            p += c_len;
-        }
-    }
-    else
-    {
-        draw_list->AddText(title_pos, start_color_u32, text_start);
-    }
+    PopStyleColor();
+    PopStyleVar();
 
-    ImGui::SetCursorPosY(header_height + padding.y - 3.f);
-
-    return true;
+    return ret;
 }
-
 void ImGui::EndCustomChild()
 {
     ImGui::EndChild();

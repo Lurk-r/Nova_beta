@@ -68,10 +68,10 @@ static const float          DRAGDROP_HOLD_TO_OPEN_TIMER = 0.70f;    // Time for 
 static const float          DRAG_MOUSE_THRESHOLD_FACTOR = 0.50f;    // Multiplier for the default value of io.MouseDragThreshold to make DragFloat/DragInt react faster to mouse drags.
 
 // Those MIN/MAX values are not define because we need to point to them
-static const signed char    IM_S8_MIN  = -128;
-static const signed char    IM_S8_MAX  = 127;
-static const unsigned char  IM_U8_MIN  = 0;
-static const unsigned char  IM_U8_MAX  = 0xFF;
+static const signed char    IM_S8_MIN = -128;
+static const signed char    IM_S8_MAX = 127;
+static const unsigned char  IM_U8_MIN = 0;
+static const unsigned char  IM_U8_MAX = 0xFF;
 static const signed short   IM_S16_MIN = -32768;
 static const signed short   IM_S16_MAX = 32767;
 static const unsigned short IM_U16_MIN = 0;
@@ -249,7 +249,7 @@ void ImGui::TextV(const char* fmt, va_list args)
     if (window->SkipItems)
         return;
 
-    const char* text, *text_end;
+    const char* text, * text_end;
     ImFormatStringToTempBufferV(&text, &text_end, fmt, args);
     TextEx(text, text_end, ImGuiTextFlags_NoWidthForLargeClippedText);
 }
@@ -323,7 +323,7 @@ void ImGui::LabelTextV(const char* label, const char* fmt, va_list args)
     const ImGuiStyle& style = g.Style;
     const float w = CalcItemWidth();
 
-    const char* value_text_begin, *value_text_end;
+    const char* value_text_begin, * value_text_end;
     ImFormatStringToTempBufferV(&value_text_begin, &value_text_end, fmt, args);
     const ImVec2 value_size = CalcTextSize(value_text_begin, value_text_end, false);
     const ImVec2 label_size = CalcTextSize(label, NULL, true);
@@ -359,7 +359,7 @@ void ImGui::BulletTextV(const char* fmt, va_list args)
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
 
-    const char* text_begin, *text_end;
+    const char* text_begin, * text_end;
     ImFormatStringToTempBufferV(&text_begin, &text_end, fmt, args);
     const ImVec2 label_size = CalcTextSize(text_begin, text_end, false);
     const ImVec2 total_size = ImVec2(g.FontSize + (label_size.x > 0.0f ? (label_size.x + style.FramePadding.x * 2) : 0.0f), label_size.y);  // Empty text doesn't add padding
@@ -744,21 +744,19 @@ bool ImGui::CustomButton(const char* label, const char* text, float sizeX, float
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems) return false;
 
-
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
-    // IMPORTANT: The ID is based on the 'label', but the displayed text is 'text'.
     const ImGuiID id = window->GetID(label);
     const ImVec2 text_size = CalcTextSize(text, NULL, true);
 
     ImVec2 pos = window->DC.CursorPos;
     ImVec2 final_size = { sizeX, sizeY };
 
-    // Auto-calculate size if dimensions are 0
+    // Auto-calculate size - compact
     if (sizeX == 0.0f)
-        final_size.x = text_size.x + style.FramePadding.x * 2.0f;
+        final_size.x = text_size.x + style.FramePadding.x * 2.0f + 12.0f;
     if (sizeY == 0.0f)
-        final_size.y = text_size.y + style.FramePadding.y * 2.0f;
+        final_size.y = text_size.y + style.FramePadding.y * 2.0f + 4.0f;
 
     ImRect bb(pos, pos + final_size);
     ItemSize(bb, style.FramePadding.y);
@@ -767,67 +765,68 @@ bool ImGui::CustomButton(const char* label, const char* text, float sizeX, float
     bool hovered, held;
     bool pressed = ButtonBehavior(bb, id, &hovered, &held);
 
-    // Animation state map now uses the new struct to store border color and glow alpha
+    // Compact animation state
     static std::map<ImGuiID, ButtonAnimationState> anim_states;
     auto it_state = anim_states.find(id);
     if (it_state == anim_states.end()) {
-        // Initialize with a darkened version of the theme color
-        anim_states.insert({ id, { ImVec4(ThemeColor.x * 0.4f, ThemeColor.y * 0.4f, ThemeColor.z * 0.4f, 0.8f), 0.2f } });
+        anim_states.insert({ id, { ImVec4(ThemeColor.x * 0.3f, ThemeColor.y * 0.3f, ThemeColor.z * 0.3f, 0.5f), 0.0f } });
         it_state = anim_states.find(id);
     }
 
-    // --- Animation Logic ---
-    // Animate border color
+    // Faster animation for snappier feel
+    float dt = g.IO.DeltaTime;
+    float animSpeed = 14.0f;
+
+    // Target states - brighter glow
     ImVec4 target_border_color;
+    float target_glow_alpha;
+
     if (held) {
-        // Brightest state when held
-        target_border_color = ImVec4(ImMin(1.0f, ThemeColor.x * 1.3f), ImMin(1.0f, ThemeColor.y * 1.3f), ImMin(1.0f, ThemeColor.z * 1.3f), ThemeColor.w);
+        target_border_color = ImVec4(ImMin(1.0f, ThemeColor.x * 1.3f), ImMin(1.0f, ThemeColor.y * 1.3f), ImMin(1.0f, ThemeColor.z * 1.3f), 0.9f);
+        target_glow_alpha = 0.9f;
     }
     else if (hovered) {
-        // Full theme color on hover
-        target_border_color = ThemeColor;
+        target_border_color = ImVec4(ThemeColor.x, ThemeColor.y, ThemeColor.z, 0.7f);
+        target_glow_alpha = 0.6f;
     }
     else {
-        // NEW: Use a darkened, desaturated version of the theme color for the idle state.
-        target_border_color = ImVec4(ThemeColor.x * 0.4f, ThemeColor.y * 0.4f, ThemeColor.z * 0.4f, 0.8f);
+        target_border_color = ImVec4(ThemeColor.x * 0.3f, ThemeColor.y * 0.3f, ThemeColor.z * 0.35f, 0.4f);
+        target_glow_alpha = 0.0f;
     }
-    it_state->second.border_color = ImLerp(it_state->second.border_color, target_border_color, g.IO.DeltaTime * 12.0f);
 
-    // Animate glow alpha
-    // NEW: The target is now 0.2f for idle, creating a subtle persistent glow, and 1.0f for active states.
-    float target_glow_alpha = (hovered || held) ? 1.0f : 0.2f;
-    it_state->second.glow_alpha = ImLerp(it_state->second.glow_alpha, target_glow_alpha, g.IO.DeltaTime * 10.0f);
+    float smoothT = 1.0f - std::exp(-animSpeed * dt);
+    it_state->second.border_color = ImLerp(it_state->second.border_color, target_border_color, smoothT);
+    it_state->second.glow_alpha = it_state->second.glow_alpha + (target_glow_alpha - it_state->second.glow_alpha) * smoothT;
 
+    // Compact rendering
+    const float rounding = 5.0f;
+    const float borderThickness = 1.0f;
 
-    // --- Rendering ---
-    const float rounding = 6.0f;
-
-    // 1. Render the Glow (it will now always have at least a subtle glow)
+    // Brighter outer glow effect
     if (it_state->second.glow_alpha > 0.01f) {
-        ImVec4 glow_color_v4 = ThemeColor; // Glow with the current theme color
-        glow_color_v4.w *= it_state->second.glow_alpha; // Apply the animated alpha
-        ImU32 glow_color_u32 = ColorConvertFloat4ToU32(glow_color_v4);
-
-        // Add a shadow that acts as a soft glow around the button's bounding box
-        window->DrawList->AddShadowRect(bb.Min, bb.Max, glow_color_u32, 25.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, rounding);
+        ImVec4 glow_color = ThemeColor;
+        glow_color.w = it_state->second.glow_alpha * 0.5f;
+        window->DrawList->AddShadowRect(bb.Min, bb.Max, ColorConvertFloat4ToU32(glow_color), 20.0f * it_state->second.glow_alpha, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, rounding);
     }
 
-    // 2. Render the main button body and border
-    ImU32 bg_col = held ? IM_COL32(8, 8, 8, 180) : IM_COL32(10, 10, 10, 180);
-    window->DrawList->AddRectFilled(bb.Min, bb.Max, bg_col, rounding);
-    window->DrawList->AddRect(bb.Min, bb.Max, ColorConvertFloat4ToU32(it_state->second.border_color), rounding, 0, 1.0f);
+    // Darker solid background
+    ImU32 bg_col = held ? IM_COL32(12, 12, 16, 250) : (hovered ? IM_COL32(10, 10, 14, 248) : IM_COL32(8, 8, 10, 245));
+    window->DrawList->AddRectFilled(bb.Min, bb.Max, bg_col, rounding, ImDrawFlags_RoundCornersAll);
 
-    // 3. Render the centered text
+    // Border
+    window->DrawList->AddRect(bb.Min, bb.Max, ColorConvertFloat4ToU32(it_state->second.border_color), rounding, ImDrawFlags_RoundCornersAll, borderThickness);
+
+    // Text - centered
     if (text) {
         ImVec2 text_pos = {
             bb.Min.x + (final_size.x - text_size.x) * 0.5f,
             bb.Min.y + (final_size.y - text_size.y) * 0.5f
         };
-        RenderText(text_pos, text);
+        ImU32 textCol = hovered || held ? IM_COL32(255, 255, 255, 255) : IM_COL32(210, 210, 220, 255);
+        window->DrawList->AddText(text_pos, textCol, text);
     }
 
     return pressed;
-
 }
 
 
@@ -1313,7 +1312,6 @@ struct CheckboxAnimation {
 
 
 bool ImGui::CustomCheckbox(const char* label, bool* v) {
-    ImColor color = ImColor(255, 255, 255);
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems) return false;
 
@@ -1321,9 +1319,15 @@ bool ImGui::CustomCheckbox(const char* label, bool* v) {
     const ImGuiStyle& style = g.Style;
     const ImGuiID id = window->GetID(label);
     const ImVec2 label_size = CalcTextSize(label, NULL, true);
-    const float square_sz = 20;
+
+    // Modern toggle-style checkbox dimensions
+    const float toggle_width = 36.0f;
+    const float toggle_height = 20.0f;
+    const float knob_size = 14.0f;
+    const float knob_padding = 3.0f;
+
     const ImVec2 pos = window->DC.CursorPos;
-    const ImRect total_bb(pos, pos + ImVec2(square_sz + 12 + label_size.x, (label_size.y > square_sz) ? label_size.y : square_sz));
+    const ImRect total_bb(pos, pos + ImVec2(toggle_width + 10 + label_size.x, ImMax(toggle_height, label_size.y)));
 
     ItemSize(total_bb, style.FramePadding.y);
     if (!ItemAdd(total_bb, id)) return false;
@@ -1339,32 +1343,68 @@ bool ImGui::CustomCheckbox(const char* label, bool* v) {
     static std::map<ImGuiID, CheckboxAnimation> anims;
     auto it_anim = anims.find(id);
     if (it_anim == anims.end()) {
-        anims.insert({ id, {0.0f} });
+        anims.insert({ id, {*v ? 1.0f : 0.0f} });
         it_anim = anims.find(id);
     }
 
-    float selected_target = *v ? 1.0f : (hovered ? 0.2f : 0.0f);
-    float check_target = *v ? 1.0f : 0.0f;
-    it_anim->second.animation_progress = ImLerp(it_anim->second.animation_progress, check_target, 0.08f * (1.0f - ImGui::GetIO().DeltaTime));
+    // Smooth animation
+    float dt = g.IO.DeltaTime;
+    float target = *v ? 1.0f : 0.0f;
+    float smoothT = 1.0f - std::exp(-14.0f * dt);
+    it_anim->second.animation_progress = it_anim->second.animation_progress + (target - it_anim->second.animation_progress) * smoothT;
+    float anim = it_anim->second.animation_progress;
 
-    // Base dark background
-    window->DrawList->AddRectFilled(total_bb.Min, total_bb.Min + ImVec2(square_sz, square_sz), ImColor(32, 33, 35), 3.0f);
+    // Toggle track position
+    ImVec2 track_min = pos;
+    ImVec2 track_max = ImVec2(pos.x + toggle_width, pos.y + toggle_height);
+    float track_rounding = toggle_height * 0.5f;
 
-    // ThemeColor fill with animation
-    ImVec4 theme_with_alpha = ThemeColor;
-    theme_with_alpha.w = ImLerp(0.0f, 1.0f, *v ? it_anim->second.animation_progress : (hovered ? 0.2f : 0.0f));
-    window->DrawList->AddRectFilled(total_bb.Min, total_bb.Min + ImVec2(square_sz, square_sz), ColorConvertFloat4ToU32(theme_with_alpha), 3.0f);
+    // Background track with gradient
+    ImVec4 off_color = ImVec4(0.15f, 0.15f, 0.18f, 1.0f);
+    ImVec4 on_color = ThemeColor;
+    ImVec4 current_color = ImLerp(off_color, on_color, anim);
 
-    // Shadow/glow effect with ThemeColor
-    ImVec4 shadow_color = ThemeColor;
-    shadow_color.w = it_anim->second.animation_progress;
-    window->DrawList->AddShadowRect(total_bb.Min, total_bb.Min + ImVec2(square_sz, square_sz), ColorConvertFloat4ToU32(shadow_color), 15, ImVec2(0, 0), 0, 3.f);
+    // Outer glow when on
+    if (anim > 0.1f) {
+        ImVec4 glow_color = ThemeColor;
+        glow_color.w = anim * 0.35f;
+        window->DrawList->AddShadowRect(track_min, track_max, ColorConvertFloat4ToU32(glow_color), 20.0f * anim, ImVec2(0, 0), 0, track_rounding);
+    }
 
-    // Checkmark
-    RenderCheckMark(window->DrawList, ImVec2(total_bb.Min.x + 5, (total_bb.Min.y + total_bb.Max.y) / 2 - 5), ImColor(0.0f, 0.0f, 0.0f, it_anim->second.animation_progress), 10.0f);
+    // Track background
+    ImU32 track_col = ColorConvertFloat4ToU32(current_color);
+    window->DrawList->AddRectFilled(track_min, track_max, track_col, track_rounding);
 
-    // Label text
-    window->DrawList->AddText(ImVec2(total_bb.Max.x - label_size.x - 5, total_bb.Min.y + 2), ImColor(color), label);
+    // Inner shadow for depth
+    ImU32 inner_shadow = IM_COL32(0, 0, 0, static_cast<int>(40 * (1.0f - anim)));
+    window->DrawList->AddRectFilled(
+        ImVec2(track_min.x + 1, track_min.y + 1),
+        ImVec2(track_max.x - 1, track_min.y + 4),
+        inner_shadow, track_rounding, ImDrawFlags_RoundCornersTop
+    );
+
+    // Knob position with smooth animation
+    float knob_travel = toggle_width - knob_size - knob_padding * 2;
+    float knob_x = track_min.x + knob_padding + (knob_travel * anim);
+    float knob_y = track_min.y + (toggle_height - knob_size) * 0.5f;
+
+    ImVec2 knob_min(knob_x, knob_y);
+    ImVec2 knob_max(knob_x + knob_size, knob_y + knob_size);
+    float knob_rounding = knob_size * 0.5f;
+
+    // Knob shadow
+    window->DrawList->AddShadowRect(knob_min, knob_max, IM_COL32(0, 0, 0, 80), 8.0f, ImVec2(0, 2), 0, knob_rounding);
+
+    // Knob with gradient - using circle for proper rounded appearance
+    ImVec2 knob_center(knob_min.x + knob_size * 0.5f, knob_min.y + knob_size * 0.5f);
+    window->DrawList->AddCircleFilled(knob_center, knob_size * 0.5f, IM_COL32(255, 255, 255, 255), 16);
+
+    // Subtle inner shadow on knob for depth
+    window->DrawList->AddCircle(knob_center, knob_size * 0.5f - 1.0f, IM_COL32(200, 200, 210, 60), 16, 1.0f);
+
+    // Label with hover effect
+    ImU32 label_col = hovered ? IM_COL32(255, 255, 255, 255) : IM_COL32(200, 200, 210, 255);
+    window->DrawList->AddText(ImVec2(track_max.x + 10, pos.y + (toggle_height - label_size.y) * 0.5f), label_col, label);
 
     return pressed;
 }
@@ -1970,10 +2010,11 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
     const ImGuiStyle& style = g.Style;
     const ImGuiID id = window->GetID(label);
     IM_ASSERT((flags & (ImGuiComboFlags_NoArrowButton | ImGuiComboFlags_NoPreview)) != (ImGuiComboFlags_NoArrowButton | ImGuiComboFlags_NoPreview));
-    const float size = GetWindowWidth() - 30;
+    const float size = GetWindowWidth() - 20;
 
-    const ImRect rect(window->DC.CursorPos, window->DC.CursorPos + ImVec2(size, 53));
-    const ImRect clickable(window->DC.CursorPos + ImVec2(0, 23), window->DC.CursorPos + ImVec2(size, 53));
+    // Compact layout
+    const ImRect rect(window->DC.CursorPos, window->DC.CursorPos + ImVec2(size, 42));
+    const ImRect clickable(window->DC.CursorPos + ImVec2(0, 18), window->DC.CursorPos + ImVec2(size, 42));
 
     ItemSize(rect, style.FramePadding.y);
     if (!ItemAdd(clickable, id, &rect))
@@ -1994,54 +2035,54 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
     auto it_anim = anim.find(id);
     if (it_anim == anim.end())
     {
-        anim.insert({ id, { 0.0f, 0.0f, 0.0f, ImVec4(ThemeColor.x * 0.4f, ThemeColor.y * 0.4f, ThemeColor.z * 0.4f, 0.8f), 0.2f } });
+        anim.insert({ id, { 0.0f, 0.0f, 0.0f, ImVec4(ThemeColor.x * 0.3f, ThemeColor.y * 0.3f, ThemeColor.z * 0.35f, 0.5f), 0.0f } });
         it_anim = anim.find(id);
     }
 
-    it_anim->second.alpha = ImClamp(it_anim->second.alpha + (fixed_speed(8.f) * (popup_open ? 1.f : -1.f)), 0.f, 1.f);
-    it_anim->second.open_anim = ImLerp(it_anim->second.open_anim, popup_open ? 10.f : 0.f, fixed_speed(12.f));
+    it_anim->second.alpha = ImClamp(it_anim->second.alpha + (fixed_speed(10.f) * (popup_open ? 1.f : -1.f)), 0.f, 1.f);
+    it_anim->second.open_anim = ImLerp(it_anim->second.open_anim, popup_open ? 8.f : 0.f, fixed_speed(14.f));
     it_anim->second.arrow_anim = ImLerp(it_anim->second.arrow_anim, popup_open ? 0.3f : 0.0f, 0.05f * (1.0f - ImGui::GetIO().DeltaTime));
 
-    // Animate border color
+    // Animate border color - faster
     ImVec4 target_border_color;
     if (held) {
-        target_border_color = ImVec4(ImMin(1.0f, ThemeColor.x * 1.3f), ImMin(1.0f, ThemeColor.y * 1.3f), ImMin(1.0f, ThemeColor.z * 1.3f), ThemeColor.w);
+        target_border_color = ImVec4(ImMin(1.0f, ThemeColor.x * 1.2f), ImMin(1.0f, ThemeColor.y * 1.2f), ImMin(1.0f, ThemeColor.z * 1.2f), 0.8f);
     }
     else if (hovered || popup_open) {
-        target_border_color = ThemeColor;
+        target_border_color = ImVec4(ThemeColor.x, ThemeColor.y, ThemeColor.z, 0.7f);
     }
     else {
-        target_border_color = ImVec4(ThemeColor.x * 0.4f, ThemeColor.y * 0.4f, ThemeColor.z * 0.4f, 0.8f);
+        target_border_color = ImVec4(ThemeColor.x * 0.3f, ThemeColor.y * 0.3f, ThemeColor.z * 0.35f, 0.5f);
     }
-    it_anim->second.border_color = ImLerp(it_anim->second.border_color, target_border_color, g.IO.DeltaTime * 12.0f);
+    it_anim->second.border_color = ImLerp(it_anim->second.border_color, target_border_color, g.IO.DeltaTime * 14.0f);
 
-    // Animate glow
-    float target_glow = (hovered || held || popup_open) ? 1.0f : 0.2f;
-    it_anim->second.glow_alpha = ImLerp(it_anim->second.glow_alpha, target_glow, g.IO.DeltaTime * 10.0f);
+    // Animate glow - brighter and more noticeable
+    float target_glow = (hovered || held || popup_open) ? 0.8f : 0.0f;
+    it_anim->second.glow_alpha = ImLerp(it_anim->second.glow_alpha, target_glow, g.IO.DeltaTime * 12.0f);
 
-    // Draw glow
+    // Brighter glow effect
     if (it_anim->second.glow_alpha > 0.01f) {
         ImVec4 glow_color_v4 = ThemeColor;
-        glow_color_v4.w = it_anim->second.glow_alpha;
+        glow_color_v4.w = it_anim->second.glow_alpha * 0.6f;
         window->DrawList->AddShadowRect(clickable.Min, clickable.Max,
-            ColorConvertFloat4ToU32(glow_color_v4), 25.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, 6.0f);
+            ColorConvertFloat4ToU32(glow_color_v4), 20.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, 5.0f);
     }
 
-    // Draw main combo box (darker + transparent)
-    ImU32 bg_col = held ? IM_COL32(8, 8, 8, 180) : IM_COL32(10, 10, 10, 180);
-    window->DrawList->AddRectFilled(clickable.Min, clickable.Max, bg_col, 6.0f);
+    // Draw main combo box - clean and darker
+    ImU32 bg_col = held ? IM_COL32(6, 6, 8, 245) : IM_COL32(8, 8, 10, 240);
+    window->DrawList->AddRectFilled(clickable.Min, clickable.Max, bg_col, 5.0f, ImDrawFlags_RoundCornersAll);
     window->DrawList->AddRect(clickable.Min, clickable.Max,
-        ColorConvertFloat4ToU32(it_anim->second.border_color), 6.0f, 0, 1.0f);
+        ColorConvertFloat4ToU32(it_anim->second.border_color), 5.0f, ImDrawFlags_RoundCornersAll, 1.0f);
 
     // Draw label
     window->DrawList->AddText(rect.Min, GetColorU32(ImGuiCol_Text), label);
 
-    // Draw preview text
-    RenderTextClipped(clickable.Min + ImVec2(14, 7), clickable.Max - ImVec2(24, -47), preview_value, NULL, NULL, ImVec2(0.0f, 0.0f));
+    // Draw preview text - compact
+    RenderTextClipped(clickable.Min + ImVec2(10, 4), clickable.Max - ImVec2(20, -36), preview_value, NULL, NULL, ImVec2(0.0f, 0.0f));
 
-    // Draw arrow with theme color
-    float arrow_sz = 8.0f;
-    ImVec2 arrow_center(clickable.Max.x - style.FramePadding.x - arrow_sz - 6.0f, clickable.GetCenter().y);
+    // Draw arrow - smaller
+    float arrow_sz = 6.0f;
+    ImVec2 arrow_center(clickable.Max.x - style.FramePadding.x - arrow_sz - 4.0f, clickable.GetCenter().y);
     ImU32 arrow_color = ColorConvertFloat4ToU32(it_anim->second.border_color);
     ImVec2 a, b, c;
     if (popup_open) {
@@ -2094,30 +2135,30 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
             popup_window->AutoPosLastDirection = (flags & ImGuiComboFlags_PopupAlignLeft) ? ImGuiDir_Left : ImGuiDir_Down;
             ImRect r_outer = GetPopupAllowedExtentRect(popup_window);
             ImVec2 pos = FindBestWindowPosForPopupEx(clickable.GetBL(), size_expected, &popup_window->AutoPosLastDirection, r_outer, clickable, ImGuiPopupPositionPolicy_ComboBox);
-            SetNextWindowPos(pos + ImVec2(0, 3));
+            SetNextWindowPos(pos + ImVec2(0, 2));
         }
 
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove;
-    PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 5));
-    PushStyleVar(ImGuiStyleVar_PopupRounding, 6.0f);
+    PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 4));
+    PushStyleVar(ImGuiStyleVar_PopupRounding, 5.0f);
     PushStyleVar(ImGuiStyleVar_Alpha, it_anim->second.alpha);
     PushStyleVar(ImGuiStyleVar_PopupBorderSize, 1.0f);
     SetNextWindowPos(clickable.GetBL() + ImVec2(0, std::round(it_anim->second.open_anim)));
 
-    // Theme-colored popup with glow
-    PushStyleColor(ImGuiCol_Border, ImVec4(ThemeColor.x * 0.6f, ThemeColor.y * 0.6f, ThemeColor.z * 0.6f, 0.8f));
-    PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.04f, 0.04f, 0.04f, 0.98f)); // Very dark
+    // Theme-colored popup - darker and cleaner
+    PushStyleColor(ImGuiCol_Border, ImVec4(ThemeColor.x * 0.6f, ThemeColor.y * 0.6f, ThemeColor.z * 0.6f, 0.7f));
+    PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.02f, 0.02f, 0.03f, 0.98f));
 
     bool ret = Begin(name, NULL, window_flags | ImGuiWindowFlags_NoScrollbar);
 
-    // Add subtle glow to popup
+    // Add brighter glow to popup
     if (ret) {
         ImVec2 popup_min = GetWindowPos();
         ImVec2 popup_max = popup_min + GetWindowSize();
         ImVec4 popup_glow = ThemeColor;
-        popup_glow.w = 0.3f;
+        popup_glow.w = 0.5f;
         GetWindowDrawList()->AddShadowRect(popup_min, popup_max,
-            ColorConvertFloat4ToU32(popup_glow), 20.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, 6.0f);
+            ColorConvertFloat4ToU32(popup_glow), 30.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, 6.0f);
     }
 
     PopStyleVar(4);
@@ -2446,13 +2487,15 @@ bool ImGui::SearchableCombo(const char* label, int* current_item, const char* co
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     const float rounding = 6.0f;
 
+    // Brighter glow for SearchableCombo
     if (state.glow_alpha > 0.01f) {
         ImVec4 glow_color_v4 = ThemeColor;
-        glow_color_v4.w *= state.glow_alpha;
-        draw_list->AddShadowRect(bb.Min, bb.Max, ColorConvertFloat4ToU32(glow_color_v4), 25.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, rounding);
+        glow_color_v4.w *= state.glow_alpha * 1.2f;
+        draw_list->AddShadowRect(bb.Min, bb.Max, ColorConvertFloat4ToU32(glow_color_v4), 30.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, rounding);
     }
 
-    ImU32 bg_col = held ? IM_COL32(8, 8, 8, 180) : IM_COL32(10, 10, 10, 180);
+    // Darker background
+    ImU32 bg_col = held ? IM_COL32(4, 4, 5, 200) : IM_COL32(6, 6, 8, 200);
     draw_list->AddRectFilled(bb.Min, bb.Max, bg_col, rounding);
     draw_list->AddRect(bb.Min, bb.Max, ColorConvertFloat4ToU32(state.border_color), rounding, 0, 1.0f);
 
@@ -2497,16 +2540,18 @@ bool ImGui::SearchableCombo(const char* label, int* current_item, const char* co
             const ImVec2 popup_pos = ImGui::GetWindowPos();
             const ImVec2 popup_size = ImGui::GetWindowSize();
 
-            const ImU32 col_popup_bg = IM_COL32(10, 10, 10, 250);
+            // Darker cleaner popup background
+            const ImU32 col_popup_bg = IM_COL32(5, 5, 7, 252);
             ImVec4 popup_glow_color = ThemeColor;
-            popup_glow_color.w = 0.3f;
-            popup_draw_list->AddShadowRect(popup_pos, popup_pos + popup_size, ColorConvertFloat4ToU32(popup_glow_color), 20.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, rounding);
+            popup_glow_color.w = 0.5f; // Brighter glow
+            popup_draw_list->AddShadowRect(popup_pos, popup_pos + popup_size, ColorConvertFloat4ToU32(popup_glow_color), 30.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, rounding);
             popup_draw_list->AddRectFilled(popup_pos, popup_pos + popup_size, col_popup_bg, rounding);
-            popup_draw_list->AddRect(popup_pos, popup_pos + popup_size, ColorConvertFloat4ToU32(ImVec4(ThemeColor.x * 0.6f, ThemeColor.y * 0.6f, ThemeColor.z * 0.6f, 0.8f)), rounding, 0, 1.0f);
+            popup_draw_list->AddRect(popup_pos, popup_pos + popup_size, ColorConvertFloat4ToU32(ImVec4(ThemeColor.x * 0.7f, ThemeColor.y * 0.7f, ThemeColor.z * 0.7f, 0.9f)), rounding, 0, 1.0f);
 
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.08f, 0.08f, 0.08f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
+            // Darker input colors
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.03f, 0.03f, 0.04f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.06f, 0.06f, 0.07f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.06f, 0.06f, 0.07f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_Border, state.border_color);
 
             ImGui::SetKeyboardFocusHere();
@@ -2517,13 +2562,13 @@ bool ImGui::SearchableCombo(const char* label, int* current_item, const char* co
             ImRect input_bb(input_pos, input_pos + ImVec2(width - style.WindowPadding.x * 2, input_height));
 
             bool input_focused = ImGui::IsItemActive();
-            float target_input_glow = input_focused ? 0.8f : 0.0f;
+            float target_input_glow = input_focused ? 1.0f : 0.0f;
             state.input_glow_alpha = ImLerp(state.input_glow_alpha, target_input_glow, g.IO.DeltaTime * 12.0f);
 
             if (state.input_glow_alpha > 0.01f) {
                 ImVec4 input_glow_color = ThemeColor;
                 input_glow_color.w *= state.input_glow_alpha;
-                popup_draw_list->AddShadowRect(input_bb.Min, input_bb.Max, ColorConvertFloat4ToU32(input_glow_color), 15.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, 4.0f);
+                popup_draw_list->AddShadowRect(input_bb.Min, input_bb.Max, ColorConvertFloat4ToU32(input_glow_color), 20.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, 4.0f);
             }
 
             ImGui::InputText("##search", state.searchBuffer, sizeof(state.searchBuffer));
@@ -2562,12 +2607,12 @@ bool ImGui::SearchableCombo(const char* label, int* current_item, const char* co
 
                         if (item_hovered) {
                             ImVec4 hover_color = ThemeColor;
-                            hover_color.w = 0.2f;
+                            hover_color.w = 0.3f;
                             popup_draw_list->AddRectFilled(item_bb.Min, item_bb.Max, ColorConvertFloat4ToU32(hover_color), 4.0f);
 
                             ImVec4 item_glow = ThemeColor;
-                            item_glow.w = 0.4f;
-                            popup_draw_list->AddShadowRect(item_bb.Min, item_bb.Max, ColorConvertFloat4ToU32(item_glow), 10.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, 4.0f);
+                            item_glow.w = 0.6f; // Brighter item glow
+                            popup_draw_list->AddShadowRect(item_bb.Min, item_bb.Max, ColorConvertFloat4ToU32(item_glow), 15.0f, ImVec2(0, 0), ImDrawFlags_RoundCornersAll, 4.0f);
 
                             if (ImGui::IsMouseClicked(0)) {
                                 *current_item = i;
@@ -2678,47 +2723,47 @@ void ImGui::DataTypeApplyOp(ImGuiDataType data_type, int op, void* output, const
     IM_ASSERT(op == '+' || op == '-');
     switch (data_type)
     {
-        case ImGuiDataType_S8:
-            if (op == '+') { *(ImS8*)output  = ImAddClampOverflow(*(const ImS8*)arg1,  *(const ImS8*)arg2,  IM_S8_MIN,  IM_S8_MAX); }
-            if (op == '-') { *(ImS8*)output  = ImSubClampOverflow(*(const ImS8*)arg1,  *(const ImS8*)arg2,  IM_S8_MIN,  IM_S8_MAX); }
-            return;
-        case ImGuiDataType_U8:
-            if (op == '+') { *(ImU8*)output  = ImAddClampOverflow(*(const ImU8*)arg1,  *(const ImU8*)arg2,  IM_U8_MIN,  IM_U8_MAX); }
-            if (op == '-') { *(ImU8*)output  = ImSubClampOverflow(*(const ImU8*)arg1,  *(const ImU8*)arg2,  IM_U8_MIN,  IM_U8_MAX); }
-            return;
-        case ImGuiDataType_S16:
-            if (op == '+') { *(ImS16*)output = ImAddClampOverflow(*(const ImS16*)arg1, *(const ImS16*)arg2, IM_S16_MIN, IM_S16_MAX); }
-            if (op == '-') { *(ImS16*)output = ImSubClampOverflow(*(const ImS16*)arg1, *(const ImS16*)arg2, IM_S16_MIN, IM_S16_MAX); }
-            return;
-        case ImGuiDataType_U16:
-            if (op == '+') { *(ImU16*)output = ImAddClampOverflow(*(const ImU16*)arg1, *(const ImU16*)arg2, IM_U16_MIN, IM_U16_MAX); }
-            if (op == '-') { *(ImU16*)output = ImSubClampOverflow(*(const ImU16*)arg1, *(const ImU16*)arg2, IM_U16_MIN, IM_U16_MAX); }
-            return;
-        case ImGuiDataType_S32:
-            if (op == '+') { *(ImS32*)output = ImAddClampOverflow(*(const ImS32*)arg1, *(const ImS32*)arg2, IM_S32_MIN, IM_S32_MAX); }
-            if (op == '-') { *(ImS32*)output = ImSubClampOverflow(*(const ImS32*)arg1, *(const ImS32*)arg2, IM_S32_MIN, IM_S32_MAX); }
-            return;
-        case ImGuiDataType_U32:
-            if (op == '+') { *(ImU32*)output = ImAddClampOverflow(*(const ImU32*)arg1, *(const ImU32*)arg2, IM_U32_MIN, IM_U32_MAX); }
-            if (op == '-') { *(ImU32*)output = ImSubClampOverflow(*(const ImU32*)arg1, *(const ImU32*)arg2, IM_U32_MIN, IM_U32_MAX); }
-            return;
-        case ImGuiDataType_S64:
-            if (op == '+') { *(ImS64*)output = ImAddClampOverflow(*(const ImS64*)arg1, *(const ImS64*)arg2, IM_S64_MIN, IM_S64_MAX); }
-            if (op == '-') { *(ImS64*)output = ImSubClampOverflow(*(const ImS64*)arg1, *(const ImS64*)arg2, IM_S64_MIN, IM_S64_MAX); }
-            return;
-        case ImGuiDataType_U64:
-            if (op == '+') { *(ImU64*)output = ImAddClampOverflow(*(const ImU64*)arg1, *(const ImU64*)arg2, IM_U64_MIN, IM_U64_MAX); }
-            if (op == '-') { *(ImU64*)output = ImSubClampOverflow(*(const ImU64*)arg1, *(const ImU64*)arg2, IM_U64_MIN, IM_U64_MAX); }
-            return;
-        case ImGuiDataType_Float:
-            if (op == '+') { *(float*)output = *(const float*)arg1 + *(const float*)arg2; }
-            if (op == '-') { *(float*)output = *(const float*)arg1 - *(const float*)arg2; }
-            return;
-        case ImGuiDataType_Double:
-            if (op == '+') { *(double*)output = *(const double*)arg1 + *(const double*)arg2; }
-            if (op == '-') { *(double*)output = *(const double*)arg1 - *(const double*)arg2; }
-            return;
-        case ImGuiDataType_COUNT: break;
+    case ImGuiDataType_S8:
+        if (op == '+') { *(ImS8*)output = ImAddClampOverflow(*(const ImS8*)arg1, *(const ImS8*)arg2, IM_S8_MIN, IM_S8_MAX); }
+        if (op == '-') { *(ImS8*)output = ImSubClampOverflow(*(const ImS8*)arg1, *(const ImS8*)arg2, IM_S8_MIN, IM_S8_MAX); }
+        return;
+    case ImGuiDataType_U8:
+        if (op == '+') { *(ImU8*)output = ImAddClampOverflow(*(const ImU8*)arg1, *(const ImU8*)arg2, IM_U8_MIN, IM_U8_MAX); }
+        if (op == '-') { *(ImU8*)output = ImSubClampOverflow(*(const ImU8*)arg1, *(const ImU8*)arg2, IM_U8_MIN, IM_U8_MAX); }
+        return;
+    case ImGuiDataType_S16:
+        if (op == '+') { *(ImS16*)output = ImAddClampOverflow(*(const ImS16*)arg1, *(const ImS16*)arg2, IM_S16_MIN, IM_S16_MAX); }
+        if (op == '-') { *(ImS16*)output = ImSubClampOverflow(*(const ImS16*)arg1, *(const ImS16*)arg2, IM_S16_MIN, IM_S16_MAX); }
+        return;
+    case ImGuiDataType_U16:
+        if (op == '+') { *(ImU16*)output = ImAddClampOverflow(*(const ImU16*)arg1, *(const ImU16*)arg2, IM_U16_MIN, IM_U16_MAX); }
+        if (op == '-') { *(ImU16*)output = ImSubClampOverflow(*(const ImU16*)arg1, *(const ImU16*)arg2, IM_U16_MIN, IM_U16_MAX); }
+        return;
+    case ImGuiDataType_S32:
+        if (op == '+') { *(ImS32*)output = ImAddClampOverflow(*(const ImS32*)arg1, *(const ImS32*)arg2, IM_S32_MIN, IM_S32_MAX); }
+        if (op == '-') { *(ImS32*)output = ImSubClampOverflow(*(const ImS32*)arg1, *(const ImS32*)arg2, IM_S32_MIN, IM_S32_MAX); }
+        return;
+    case ImGuiDataType_U32:
+        if (op == '+') { *(ImU32*)output = ImAddClampOverflow(*(const ImU32*)arg1, *(const ImU32*)arg2, IM_U32_MIN, IM_U32_MAX); }
+        if (op == '-') { *(ImU32*)output = ImSubClampOverflow(*(const ImU32*)arg1, *(const ImU32*)arg2, IM_U32_MIN, IM_U32_MAX); }
+        return;
+    case ImGuiDataType_S64:
+        if (op == '+') { *(ImS64*)output = ImAddClampOverflow(*(const ImS64*)arg1, *(const ImS64*)arg2, IM_S64_MIN, IM_S64_MAX); }
+        if (op == '-') { *(ImS64*)output = ImSubClampOverflow(*(const ImS64*)arg1, *(const ImS64*)arg2, IM_S64_MIN, IM_S64_MAX); }
+        return;
+    case ImGuiDataType_U64:
+        if (op == '+') { *(ImU64*)output = ImAddClampOverflow(*(const ImU64*)arg1, *(const ImU64*)arg2, IM_U64_MIN, IM_U64_MAX); }
+        if (op == '-') { *(ImU64*)output = ImSubClampOverflow(*(const ImU64*)arg1, *(const ImU64*)arg2, IM_U64_MIN, IM_U64_MAX); }
+        return;
+    case ImGuiDataType_Float:
+        if (op == '+') { *(float*)output = *(const float*)arg1 + *(const float*)arg2; }
+        if (op == '-') { *(float*)output = *(const float*)arg1 - *(const float*)arg2; }
+        return;
+    case ImGuiDataType_Double:
+        if (op == '+') { *(double*)output = *(const double*)arg1 + *(const double*)arg2; }
+        if (op == '-') { *(double*)output = *(const double*)arg1 - *(const double*)arg2; }
+        return;
+    case ImGuiDataType_COUNT: break;
     }
     IM_ASSERT(0);
 }
@@ -2786,15 +2831,15 @@ int ImGui::DataTypeCompare(ImGuiDataType data_type, const void* arg_1, const voi
 {
     switch (data_type)
     {
-    case ImGuiDataType_S8:     return DataTypeCompareT<ImS8  >((const ImS8*  )arg_1, (const ImS8*  )arg_2);
-    case ImGuiDataType_U8:     return DataTypeCompareT<ImU8  >((const ImU8*  )arg_1, (const ImU8*  )arg_2);
-    case ImGuiDataType_S16:    return DataTypeCompareT<ImS16 >((const ImS16* )arg_1, (const ImS16* )arg_2);
-    case ImGuiDataType_U16:    return DataTypeCompareT<ImU16 >((const ImU16* )arg_1, (const ImU16* )arg_2);
-    case ImGuiDataType_S32:    return DataTypeCompareT<ImS32 >((const ImS32* )arg_1, (const ImS32* )arg_2);
-    case ImGuiDataType_U32:    return DataTypeCompareT<ImU32 >((const ImU32* )arg_1, (const ImU32* )arg_2);
-    case ImGuiDataType_S64:    return DataTypeCompareT<ImS64 >((const ImS64* )arg_1, (const ImS64* )arg_2);
-    case ImGuiDataType_U64:    return DataTypeCompareT<ImU64 >((const ImU64* )arg_1, (const ImU64* )arg_2);
-    case ImGuiDataType_Float:  return DataTypeCompareT<float >((const float* )arg_1, (const float* )arg_2);
+    case ImGuiDataType_S8:     return DataTypeCompareT<ImS8  >((const ImS8*)arg_1, (const ImS8*)arg_2);
+    case ImGuiDataType_U8:     return DataTypeCompareT<ImU8  >((const ImU8*)arg_1, (const ImU8*)arg_2);
+    case ImGuiDataType_S16:    return DataTypeCompareT<ImS16 >((const ImS16*)arg_1, (const ImS16*)arg_2);
+    case ImGuiDataType_U16:    return DataTypeCompareT<ImU16 >((const ImU16*)arg_1, (const ImU16*)arg_2);
+    case ImGuiDataType_S32:    return DataTypeCompareT<ImS32 >((const ImS32*)arg_1, (const ImS32*)arg_2);
+    case ImGuiDataType_U32:    return DataTypeCompareT<ImU32 >((const ImU32*)arg_1, (const ImU32*)arg_2);
+    case ImGuiDataType_S64:    return DataTypeCompareT<ImS64 >((const ImS64*)arg_1, (const ImS64*)arg_2);
+    case ImGuiDataType_U64:    return DataTypeCompareT<ImU64 >((const ImU64*)arg_1, (const ImU64*)arg_2);
+    case ImGuiDataType_Float:  return DataTypeCompareT<float >((const float*)arg_1, (const float*)arg_2);
     case ImGuiDataType_Double: return DataTypeCompareT<double>((const double*)arg_1, (const double*)arg_2);
     case ImGuiDataType_COUNT:  break;
     }
@@ -2815,15 +2860,15 @@ bool ImGui::DataTypeClamp(ImGuiDataType data_type, void* p_data, const void* p_m
 {
     switch (data_type)
     {
-    case ImGuiDataType_S8:     return DataTypeClampT<ImS8  >((ImS8*  )p_data, (const ImS8*  )p_min, (const ImS8*  )p_max);
-    case ImGuiDataType_U8:     return DataTypeClampT<ImU8  >((ImU8*  )p_data, (const ImU8*  )p_min, (const ImU8*  )p_max);
-    case ImGuiDataType_S16:    return DataTypeClampT<ImS16 >((ImS16* )p_data, (const ImS16* )p_min, (const ImS16* )p_max);
-    case ImGuiDataType_U16:    return DataTypeClampT<ImU16 >((ImU16* )p_data, (const ImU16* )p_min, (const ImU16* )p_max);
-    case ImGuiDataType_S32:    return DataTypeClampT<ImS32 >((ImS32* )p_data, (const ImS32* )p_min, (const ImS32* )p_max);
-    case ImGuiDataType_U32:    return DataTypeClampT<ImU32 >((ImU32* )p_data, (const ImU32* )p_min, (const ImU32* )p_max);
-    case ImGuiDataType_S64:    return DataTypeClampT<ImS64 >((ImS64* )p_data, (const ImS64* )p_min, (const ImS64* )p_max);
-    case ImGuiDataType_U64:    return DataTypeClampT<ImU64 >((ImU64* )p_data, (const ImU64* )p_min, (const ImU64* )p_max);
-    case ImGuiDataType_Float:  return DataTypeClampT<float >((float* )p_data, (const float* )p_min, (const float* )p_max);
+    case ImGuiDataType_S8:     return DataTypeClampT<ImS8  >((ImS8*)p_data, (const ImS8*)p_min, (const ImS8*)p_max);
+    case ImGuiDataType_U8:     return DataTypeClampT<ImU8  >((ImU8*)p_data, (const ImU8*)p_min, (const ImU8*)p_max);
+    case ImGuiDataType_S16:    return DataTypeClampT<ImS16 >((ImS16*)p_data, (const ImS16*)p_min, (const ImS16*)p_max);
+    case ImGuiDataType_U16:    return DataTypeClampT<ImU16 >((ImU16*)p_data, (const ImU16*)p_min, (const ImU16*)p_max);
+    case ImGuiDataType_S32:    return DataTypeClampT<ImS32 >((ImS32*)p_data, (const ImS32*)p_min, (const ImS32*)p_max);
+    case ImGuiDataType_U32:    return DataTypeClampT<ImU32 >((ImU32*)p_data, (const ImU32*)p_min, (const ImU32*)p_max);
+    case ImGuiDataType_S64:    return DataTypeClampT<ImS64 >((ImS64*)p_data, (const ImS64*)p_min, (const ImS64*)p_max);
+    case ImGuiDataType_U64:    return DataTypeClampT<ImU64 >((ImU64*)p_data, (const ImU64*)p_min, (const ImU64*)p_max);
+    case ImGuiDataType_Float:  return DataTypeClampT<float >((float*)p_data, (const float*)p_min, (const float*)p_max);
     case ImGuiDataType_Double: return DataTypeClampT<double>((double*)p_data, (const double*)p_min, (const double*)p_max);
     case ImGuiDataType_COUNT:  break;
     }
@@ -3036,16 +3081,16 @@ bool ImGui::DragBehavior(ImGuiID id, ImGuiDataType data_type, void* p_v, float v
 
     switch (data_type)
     {
-    case ImGuiDataType_S8:     { ImS32 v32 = (ImS32)*(ImS8*)p_v;  bool r = DragBehaviorT<ImS32, ImS32, float>(ImGuiDataType_S32, &v32, v_speed, p_min ? *(const ImS8*) p_min : IM_S8_MIN,  p_max ? *(const ImS8*)p_max  : IM_S8_MAX,  format, flags); if (r) *(ImS8*)p_v = (ImS8)v32; return r; }
-    case ImGuiDataType_U8:     { ImU32 v32 = (ImU32)*(ImU8*)p_v;  bool r = DragBehaviorT<ImU32, ImS32, float>(ImGuiDataType_U32, &v32, v_speed, p_min ? *(const ImU8*) p_min : IM_U8_MIN,  p_max ? *(const ImU8*)p_max  : IM_U8_MAX,  format, flags); if (r) *(ImU8*)p_v = (ImU8)v32; return r; }
-    case ImGuiDataType_S16:    { ImS32 v32 = (ImS32)*(ImS16*)p_v; bool r = DragBehaviorT<ImS32, ImS32, float>(ImGuiDataType_S32, &v32, v_speed, p_min ? *(const ImS16*)p_min : IM_S16_MIN, p_max ? *(const ImS16*)p_max : IM_S16_MAX, format, flags); if (r) *(ImS16*)p_v = (ImS16)v32; return r; }
-    case ImGuiDataType_U16:    { ImU32 v32 = (ImU32)*(ImU16*)p_v; bool r = DragBehaviorT<ImU32, ImS32, float>(ImGuiDataType_U32, &v32, v_speed, p_min ? *(const ImU16*)p_min : IM_U16_MIN, p_max ? *(const ImU16*)p_max : IM_U16_MAX, format, flags); if (r) *(ImU16*)p_v = (ImU16)v32; return r; }
-    case ImGuiDataType_S32:    return DragBehaviorT<ImS32, ImS32, float >(data_type, (ImS32*)p_v,  v_speed, p_min ? *(const ImS32* )p_min : IM_S32_MIN, p_max ? *(const ImS32* )p_max : IM_S32_MAX, format, flags);
-    case ImGuiDataType_U32:    return DragBehaviorT<ImU32, ImS32, float >(data_type, (ImU32*)p_v,  v_speed, p_min ? *(const ImU32* )p_min : IM_U32_MIN, p_max ? *(const ImU32* )p_max : IM_U32_MAX, format, flags);
-    case ImGuiDataType_S64:    return DragBehaviorT<ImS64, ImS64, double>(data_type, (ImS64*)p_v,  v_speed, p_min ? *(const ImS64* )p_min : IM_S64_MIN, p_max ? *(const ImS64* )p_max : IM_S64_MAX, format, flags);
-    case ImGuiDataType_U64:    return DragBehaviorT<ImU64, ImS64, double>(data_type, (ImU64*)p_v,  v_speed, p_min ? *(const ImU64* )p_min : IM_U64_MIN, p_max ? *(const ImU64* )p_max : IM_U64_MAX, format, flags);
-    case ImGuiDataType_Float:  return DragBehaviorT<float, float, float >(data_type, (float*)p_v,  v_speed, p_min ? *(const float* )p_min : -FLT_MAX,   p_max ? *(const float* )p_max : FLT_MAX,    format, flags);
-    case ImGuiDataType_Double: return DragBehaviorT<double,double,double>(data_type, (double*)p_v, v_speed, p_min ? *(const double*)p_min : -DBL_MAX,   p_max ? *(const double*)p_max : DBL_MAX,    format, flags);
+    case ImGuiDataType_S8: { ImS32 v32 = (ImS32) * (ImS8*)p_v;  bool r = DragBehaviorT<ImS32, ImS32, float>(ImGuiDataType_S32, &v32, v_speed, p_min ? *(const ImS8*)p_min : IM_S8_MIN, p_max ? *(const ImS8*)p_max : IM_S8_MAX, format, flags); if (r) *(ImS8*)p_v = (ImS8)v32; return r; }
+    case ImGuiDataType_U8: { ImU32 v32 = (ImU32) * (ImU8*)p_v;  bool r = DragBehaviorT<ImU32, ImS32, float>(ImGuiDataType_U32, &v32, v_speed, p_min ? *(const ImU8*)p_min : IM_U8_MIN, p_max ? *(const ImU8*)p_max : IM_U8_MAX, format, flags); if (r) *(ImU8*)p_v = (ImU8)v32; return r; }
+    case ImGuiDataType_S16: { ImS32 v32 = (ImS32) * (ImS16*)p_v; bool r = DragBehaviorT<ImS32, ImS32, float>(ImGuiDataType_S32, &v32, v_speed, p_min ? *(const ImS16*)p_min : IM_S16_MIN, p_max ? *(const ImS16*)p_max : IM_S16_MAX, format, flags); if (r) *(ImS16*)p_v = (ImS16)v32; return r; }
+    case ImGuiDataType_U16: { ImU32 v32 = (ImU32) * (ImU16*)p_v; bool r = DragBehaviorT<ImU32, ImS32, float>(ImGuiDataType_U32, &v32, v_speed, p_min ? *(const ImU16*)p_min : IM_U16_MIN, p_max ? *(const ImU16*)p_max : IM_U16_MAX, format, flags); if (r) *(ImU16*)p_v = (ImU16)v32; return r; }
+    case ImGuiDataType_S32:    return DragBehaviorT<ImS32, ImS32, float >(data_type, (ImS32*)p_v, v_speed, p_min ? *(const ImS32*)p_min : IM_S32_MIN, p_max ? *(const ImS32*)p_max : IM_S32_MAX, format, flags);
+    case ImGuiDataType_U32:    return DragBehaviorT<ImU32, ImS32, float >(data_type, (ImU32*)p_v, v_speed, p_min ? *(const ImU32*)p_min : IM_U32_MIN, p_max ? *(const ImU32*)p_max : IM_U32_MAX, format, flags);
+    case ImGuiDataType_S64:    return DragBehaviorT<ImS64, ImS64, double>(data_type, (ImS64*)p_v, v_speed, p_min ? *(const ImS64*)p_min : IM_S64_MIN, p_max ? *(const ImS64*)p_max : IM_S64_MAX, format, flags);
+    case ImGuiDataType_U64:    return DragBehaviorT<ImU64, ImS64, double>(data_type, (ImU64*)p_v, v_speed, p_min ? *(const ImU64*)p_min : IM_U64_MIN, p_max ? *(const ImU64*)p_max : IM_U64_MAX, format, flags);
+    case ImGuiDataType_Float:  return DragBehaviorT<float, float, float >(data_type, (float*)p_v, v_speed, p_min ? *(const float*)p_min : -FLT_MAX, p_max ? *(const float*)p_max : FLT_MAX, format, flags);
+    case ImGuiDataType_Double: return DragBehaviorT<double, double, double>(data_type, (double*)p_v, v_speed, p_min ? *(const double*)p_min : -DBL_MAX, p_max ? *(const double*)p_max : DBL_MAX, format, flags);
     case ImGuiDataType_COUNT:  break;
     }
     IM_ASSERT(0);
@@ -3616,25 +3661,25 @@ bool ImGui::SliderBehavior(const ImRect& bb, ImGuiID id, ImGuiDataType data_type
 
     switch (data_type)
     {
-    case ImGuiDataType_S8:  { ImS32 v32 = (ImS32)*(ImS8*)p_v;  bool r = SliderBehaviorT<ImS32, ImS32, float>(bb, id, ImGuiDataType_S32, &v32, *(const ImS8*)p_min,  *(const ImS8*)p_max,  format, flags, out_grab_bb); if (r) *(ImS8*)p_v  = (ImS8)v32;  return r; }
-    case ImGuiDataType_U8:  { ImU32 v32 = (ImU32)*(ImU8*)p_v;  bool r = SliderBehaviorT<ImU32, ImS32, float>(bb, id, ImGuiDataType_U32, &v32, *(const ImU8*)p_min,  *(const ImU8*)p_max,  format, flags, out_grab_bb); if (r) *(ImU8*)p_v  = (ImU8)v32;  return r; }
-    case ImGuiDataType_S16: { ImS32 v32 = (ImS32)*(ImS16*)p_v; bool r = SliderBehaviorT<ImS32, ImS32, float>(bb, id, ImGuiDataType_S32, &v32, *(const ImS16*)p_min, *(const ImS16*)p_max, format, flags, out_grab_bb); if (r) *(ImS16*)p_v = (ImS16)v32; return r; }
-    case ImGuiDataType_U16: { ImU32 v32 = (ImU32)*(ImU16*)p_v; bool r = SliderBehaviorT<ImU32, ImS32, float>(bb, id, ImGuiDataType_U32, &v32, *(const ImU16*)p_min, *(const ImU16*)p_max, format, flags, out_grab_bb); if (r) *(ImU16*)p_v = (ImU16)v32; return r; }
+    case ImGuiDataType_S8: { ImS32 v32 = (ImS32) * (ImS8*)p_v;  bool r = SliderBehaviorT<ImS32, ImS32, float>(bb, id, ImGuiDataType_S32, &v32, *(const ImS8*)p_min, *(const ImS8*)p_max, format, flags, out_grab_bb); if (r) *(ImS8*)p_v = (ImS8)v32;  return r; }
+    case ImGuiDataType_U8: { ImU32 v32 = (ImU32) * (ImU8*)p_v;  bool r = SliderBehaviorT<ImU32, ImS32, float>(bb, id, ImGuiDataType_U32, &v32, *(const ImU8*)p_min, *(const ImU8*)p_max, format, flags, out_grab_bb); if (r) *(ImU8*)p_v = (ImU8)v32;  return r; }
+    case ImGuiDataType_S16: { ImS32 v32 = (ImS32) * (ImS16*)p_v; bool r = SliderBehaviorT<ImS32, ImS32, float>(bb, id, ImGuiDataType_S32, &v32, *(const ImS16*)p_min, *(const ImS16*)p_max, format, flags, out_grab_bb); if (r) *(ImS16*)p_v = (ImS16)v32; return r; }
+    case ImGuiDataType_U16: { ImU32 v32 = (ImU32) * (ImU16*)p_v; bool r = SliderBehaviorT<ImU32, ImS32, float>(bb, id, ImGuiDataType_U32, &v32, *(const ImU16*)p_min, *(const ImU16*)p_max, format, flags, out_grab_bb); if (r) *(ImU16*)p_v = (ImU16)v32; return r; }
     case ImGuiDataType_S32:
         IM_ASSERT(*(const ImS32*)p_min >= IM_S32_MIN / 2 && *(const ImS32*)p_max <= IM_S32_MAX / 2);
-        return SliderBehaviorT<ImS32, ImS32, float >(bb, id, data_type, (ImS32*)p_v,  *(const ImS32*)p_min,  *(const ImS32*)p_max,  format, flags, out_grab_bb);
+        return SliderBehaviorT<ImS32, ImS32, float >(bb, id, data_type, (ImS32*)p_v, *(const ImS32*)p_min, *(const ImS32*)p_max, format, flags, out_grab_bb);
     case ImGuiDataType_U32:
         IM_ASSERT(*(const ImU32*)p_max <= IM_U32_MAX / 2);
-        return SliderBehaviorT<ImU32, ImS32, float >(bb, id, data_type, (ImU32*)p_v,  *(const ImU32*)p_min,  *(const ImU32*)p_max,  format, flags, out_grab_bb);
+        return SliderBehaviorT<ImU32, ImS32, float >(bb, id, data_type, (ImU32*)p_v, *(const ImU32*)p_min, *(const ImU32*)p_max, format, flags, out_grab_bb);
     case ImGuiDataType_S64:
         IM_ASSERT(*(const ImS64*)p_min >= IM_S64_MIN / 2 && *(const ImS64*)p_max <= IM_S64_MAX / 2);
-        return SliderBehaviorT<ImS64, ImS64, double>(bb, id, data_type, (ImS64*)p_v,  *(const ImS64*)p_min,  *(const ImS64*)p_max,  format, flags, out_grab_bb);
+        return SliderBehaviorT<ImS64, ImS64, double>(bb, id, data_type, (ImS64*)p_v, *(const ImS64*)p_min, *(const ImS64*)p_max, format, flags, out_grab_bb);
     case ImGuiDataType_U64:
         IM_ASSERT(*(const ImU64*)p_max <= IM_U64_MAX / 2);
-        return SliderBehaviorT<ImU64, ImS64, double>(bb, id, data_type, (ImU64*)p_v,  *(const ImU64*)p_min,  *(const ImU64*)p_max,  format, flags, out_grab_bb);
+        return SliderBehaviorT<ImU64, ImS64, double>(bb, id, data_type, (ImU64*)p_v, *(const ImU64*)p_min, *(const ImU64*)p_max, format, flags, out_grab_bb);
     case ImGuiDataType_Float:
         IM_ASSERT(*(const float*)p_min >= -FLT_MAX / 2.0f && *(const float*)p_max <= FLT_MAX / 2.0f);
-        return SliderBehaviorT<float, float, float >(bb, id, data_type, (float*)p_v,  *(const float*)p_min,  *(const float*)p_max,  format, flags, out_grab_bb);
+        return SliderBehaviorT<float, float, float >(bb, id, data_type, (float*)p_v, *(const float*)p_min, *(const float*)p_max, format, flags, out_grab_bb);
     case ImGuiDataType_Double:
         IM_ASSERT(*(const double*)p_min >= -DBL_MAX / 2.0f && *(const double*)p_max <= DBL_MAX / 2.0f);
         return SliderBehaviorT<double, double, double>(bb, id, data_type, (double*)p_v, *(const double*)p_min, *(const double*)p_max, format, flags, out_grab_bb);
@@ -4130,8 +4175,8 @@ const char* ImParseFormatFindEnd(const char* fmt)
     // Printf/scanf types modifiers: I/L/h/j/l/t/w/z. Other uppercase letters qualify as types aka end of the format.
     if (fmt[0] != '%')
         return fmt;
-    const unsigned int ignored_uppercase_mask = (1 << ('I'-'A')) | (1 << ('L'-'A'));
-    const unsigned int ignored_lowercase_mask = (1 << ('h'-'a')) | (1 << ('j'-'a')) | (1 << ('l'-'a')) | (1 << ('t'-'a')) | (1 << ('w'-'a')) | (1 << ('z'-'a'));
+    const unsigned int ignored_uppercase_mask = (1 << ('I' - 'A')) | (1 << ('L' - 'A'));
+    const unsigned int ignored_lowercase_mask = (1 << ('h' - 'a')) | (1 << ('j' - 'a')) | (1 << ('l' - 'a')) | (1 << ('t' - 'a')) | (1 << ('w' - 'a')) | (1 << ('z' - 'a'));
     for (char c; (c = *fmt) != 0; fmt++)
     {
         if (c >= 'A' && c <= 'Z' && ((1 << (c - 'A')) & ignored_uppercase_mask) == 0)
@@ -4408,7 +4453,7 @@ bool ImGui::CustomInputScalar(const char* label, const char* hint, ImGuiDataType
     static std::map<ImGuiID, InputScalarState> anim;
     auto it_anim = anim.find(id);
     if (it_anim == anim.end()) {
-        anim.insert({ id, {1.0f, ImVec4(ThemeColor.x * 0.4f, ThemeColor.y * 0.4f, ThemeColor.z * 0.4f, 0.8f), 0.2f} });
+        anim.insert({ id, {1.0f, ImVec4(ThemeColor.x * 0.3f, ThemeColor.y * 0.3f, ThemeColor.z * 0.35f, 0.6f), 0.1f} });
         it_anim = anim.find(id);
     }
 
@@ -4420,46 +4465,46 @@ bool ImGui::CustomInputScalar(const char* label, const char* hint, ImGuiDataType
     bool is_active = GetActiveID() == id;
     bool is_hovered = IsMouseHoveringRect(input_bb.Min, input_bb.Max);
 
-    // Animate border
-    float target_thickness = is_active ? 1.5f : 1.0f;
+    // Animate border - faster
+    float target_thickness = is_active ? 1.2f : 1.0f;
     ImVec4 target_color;
     if (is_active) {
-        target_color = ThemeColor;
+        target_color = ImVec4(ThemeColor.x, ThemeColor.y, ThemeColor.z, 0.8f);
     }
     else if (is_hovered) {
-        target_color = ImVec4(ThemeColor.x * 0.7f, ThemeColor.y * 0.7f, ThemeColor.z * 0.7f, 1.0f);
+        target_color = ImVec4(ThemeColor.x * 0.6f, ThemeColor.y * 0.6f, ThemeColor.z * 0.6f, 0.7f);
     }
     else {
-        target_color = ImVec4(ThemeColor.x * 0.4f, ThemeColor.y * 0.4f, ThemeColor.z * 0.4f, 0.8f);
+        target_color = ImVec4(ThemeColor.x * 0.3f, ThemeColor.y * 0.3f, ThemeColor.z * 0.35f, 0.5f);
     }
 
-    it_anim->second.border_thickness = ImLerp(it_anim->second.border_thickness, target_thickness, g.IO.DeltaTime * 12.f);
-    it_anim->second.border_color = ImLerp(it_anim->second.border_color, target_color, g.IO.DeltaTime * 12.f);
+    it_anim->second.border_thickness = ImLerp(it_anim->second.border_thickness, target_thickness, g.IO.DeltaTime * 14.f);
+    it_anim->second.border_color = ImLerp(it_anim->second.border_color, target_color, g.IO.DeltaTime * 14.f);
 
-    // Animate glow
-    float target_glow = (is_active || is_hovered) ? 1.0f : 0.2f;
-    it_anim->second.glow_alpha = ImLerp(it_anim->second.glow_alpha, target_glow, g.IO.DeltaTime * 10.f);
+    // Animate glow - brighter
+    float target_glow = (is_active || is_hovered) ? 0.8f : 0.0f;
+    it_anim->second.glow_alpha = ImLerp(it_anim->second.glow_alpha, target_glow, g.IO.DeltaTime * 12.f);
 
-    // Draw glow BEFORE the input
+    // Brighter glow
     if (it_anim->second.glow_alpha > 0.01f) {
         ImVec4 glow_color_v4 = ThemeColor;
-        glow_color_v4.w = it_anim->second.glow_alpha * 0.6f;
+        glow_color_v4.w = it_anim->second.glow_alpha * 0.55f;
         window->DrawList->AddShadowRect(
             input_bb.Min,
             input_bb.Max,
             ColorConvertFloat4ToU32(glow_color_v4),
-            20.0f,
+            18.0f,
             ImVec2(0, 0),
             ImDrawFlags_RoundCornersAll,
-            6.0f
+            5.0f
         );
     }
 
-    // Style the input field
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.04f, 0.04f, 0.04f, 0.9f)); // Very dark, slightly transparent
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.06f, 0.06f, 0.06f, 0.95f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.06f, 0.06f, 0.06f, 0.95f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f); // Match button rounding
+    // Style the input field - darker and cleaner
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.02f, 0.02f, 0.03f, 0.95f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.04f, 0.04f, 0.05f, 0.97f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.04f, 0.04f, 0.05f, 0.97f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, it_anim->second.border_thickness);
     ImGui::PushStyleColor(ImGuiCol_Border, it_anim->second.border_color);
 
@@ -4752,160 +4797,160 @@ static ImVec2 InputTextCalcTextSize(ImGuiContext* ctx, const char* text_begin, c
 // - ...but we don't use that feature.
 namespace ImStb
 {
-static int     STB_TEXTEDIT_STRINGLEN(const ImGuiInputTextState* obj)                             { return obj->CurLenA; }
-static char    STB_TEXTEDIT_GETCHAR(const ImGuiInputTextState* obj, int idx)                      { IM_ASSERT(idx <= obj->CurLenA); return obj->TextA[idx]; }
-static float   STB_TEXTEDIT_GETWIDTH(ImGuiInputTextState* obj, int line_start_idx, int char_idx)  { unsigned int c; ImTextCharFromUtf8(&c, obj->TextA.Data + line_start_idx + char_idx, obj->TextA.Data + obj->TextA.Size); if ((ImWchar)c == '\n') return IMSTB_TEXTEDIT_GETWIDTH_NEWLINE; ImGuiContext& g = *obj->Ctx; return g.Font->GetCharAdvance((ImWchar)c) * g.FontScale; }
-static char    STB_TEXTEDIT_NEWLINE = '\n';
-static void    STB_TEXTEDIT_LAYOUTROW(StbTexteditRow* r, ImGuiInputTextState* obj, int line_start_idx)
-{
-    const char* text = obj->TextA.Data;
-    const char* text_remaining = NULL;
-    const ImVec2 size = InputTextCalcTextSize(obj->Ctx, text + line_start_idx, text + obj->CurLenA, &text_remaining, NULL, true);
-    r->x0 = 0.0f;
-    r->x1 = size.x;
-    r->baseline_y_delta = size.y;
-    r->ymin = 0.0f;
-    r->ymax = size.y;
-    r->num_chars = (int)(text_remaining - (text + line_start_idx));
-}
+    static int     STB_TEXTEDIT_STRINGLEN(const ImGuiInputTextState* obj) { return obj->CurLenA; }
+    static char    STB_TEXTEDIT_GETCHAR(const ImGuiInputTextState* obj, int idx) { IM_ASSERT(idx <= obj->CurLenA); return obj->TextA[idx]; }
+    static float   STB_TEXTEDIT_GETWIDTH(ImGuiInputTextState* obj, int line_start_idx, int char_idx) { unsigned int c; ImTextCharFromUtf8(&c, obj->TextA.Data + line_start_idx + char_idx, obj->TextA.Data + obj->TextA.Size); if ((ImWchar)c == '\n') return IMSTB_TEXTEDIT_GETWIDTH_NEWLINE; ImGuiContext& g = *obj->Ctx; return g.Font->GetCharAdvance((ImWchar)c) * g.FontScale; }
+    static char    STB_TEXTEDIT_NEWLINE = '\n';
+    static void    STB_TEXTEDIT_LAYOUTROW(StbTexteditRow* r, ImGuiInputTextState* obj, int line_start_idx)
+    {
+        const char* text = obj->TextA.Data;
+        const char* text_remaining = NULL;
+        const ImVec2 size = InputTextCalcTextSize(obj->Ctx, text + line_start_idx, text + obj->CurLenA, &text_remaining, NULL, true);
+        r->x0 = 0.0f;
+        r->x1 = size.x;
+        r->baseline_y_delta = size.y;
+        r->ymin = 0.0f;
+        r->ymax = size.y;
+        r->num_chars = (int)(text_remaining - (text + line_start_idx));
+    }
 
 #define IMSTB_TEXTEDIT_GETNEXTCHARINDEX  IMSTB_TEXTEDIT_GETNEXTCHARINDEX_IMPL
 #define IMSTB_TEXTEDIT_GETPREVCHARINDEX  IMSTB_TEXTEDIT_GETPREVCHARINDEX_IMPL
 
-static int IMSTB_TEXTEDIT_GETNEXTCHARINDEX_IMPL(ImGuiInputTextState* obj, int idx)
-{
-    if (idx >= obj->CurLenA)
-        return obj->CurLenA + 1;
-    unsigned int c;
-    return idx + ImTextCharFromUtf8(&c, obj->TextA.Data + idx, obj->TextA.Data + obj->TextA.Size);
-}
-
-static int IMSTB_TEXTEDIT_GETPREVCHARINDEX_IMPL(ImGuiInputTextState* obj, int idx)
-{
-    if (idx <= 0)
-        return -1;
-    const char* p = ImTextFindPreviousUtf8Codepoint(obj->TextA.Data, obj->TextA.Data + idx);
-    return (int)(p - obj->TextA.Data);
-}
-
-static bool ImCharIsSeparatorW(unsigned int c)
-{
-    static const unsigned int separator_list[] =
+    static int IMSTB_TEXTEDIT_GETNEXTCHARINDEX_IMPL(ImGuiInputTextState* obj, int idx)
     {
-        ',', 0x3001, '.', 0x3002, ';', 0xFF1B, '(', 0xFF08, ')', 0xFF09, '{', 0xFF5B, '}', 0xFF5D,
-        '[', 0x300C, ']', 0x300D, '|', 0xFF5C, '!', 0xFF01, '\\', 0xFFE5, '/', 0x30FB, 0xFF0F,
-        '\n', '\r',
-    };
-    for (unsigned int separator : separator_list)
-        if (c == separator)
-            return true;
-    return false;
-}
+        if (idx >= obj->CurLenA)
+            return obj->CurLenA + 1;
+        unsigned int c;
+        return idx + ImTextCharFromUtf8(&c, obj->TextA.Data + idx, obj->TextA.Data + obj->TextA.Size);
+    }
 
-static int is_word_boundary_from_right(ImGuiInputTextState* obj, int idx)
-{
-    // When ImGuiInputTextFlags_Password is set, we don't want actions such as CTRL+Arrow to leak the fact that underlying data are blanks or separators.
-    if ((obj->Flags & ImGuiInputTextFlags_Password) || idx <= 0)
-        return 0;
+    static int IMSTB_TEXTEDIT_GETPREVCHARINDEX_IMPL(ImGuiInputTextState* obj, int idx)
+    {
+        if (idx <= 0)
+            return -1;
+        const char* p = ImTextFindPreviousUtf8Codepoint(obj->TextA.Data, obj->TextA.Data + idx);
+        return (int)(p - obj->TextA.Data);
+    }
 
-    const char* curr_p = obj->TextA.Data + idx;
-    const char* prev_p = ImTextFindPreviousUtf8Codepoint(obj->TextA.Data, curr_p);
-    unsigned int curr_c; ImTextCharFromUtf8(&curr_c, curr_p, obj->TextA.Data + obj->TextA.Size);
-    unsigned int prev_c; ImTextCharFromUtf8(&prev_c, prev_p, obj->TextA.Data + obj->TextA.Size);
+    static bool ImCharIsSeparatorW(unsigned int c)
+    {
+        static const unsigned int separator_list[] =
+        {
+            ',', 0x3001, '.', 0x3002, ';', 0xFF1B, '(', 0xFF08, ')', 0xFF09, '{', 0xFF5B, '}', 0xFF5D,
+            '[', 0x300C, ']', 0x300D, '|', 0xFF5C, '!', 0xFF01, '\\', 0xFFE5, '/', 0x30FB, 0xFF0F,
+            '\n', '\r',
+        };
+        for (unsigned int separator : separator_list)
+            if (c == separator)
+                return true;
+        return false;
+    }
 
-    bool prev_white = ImCharIsBlankW(prev_c);
-    bool prev_separ = ImCharIsSeparatorW(prev_c);
-    bool curr_white = ImCharIsBlankW(curr_c);
-    bool curr_separ = ImCharIsSeparatorW(curr_c);
-    return ((prev_white || prev_separ) && !(curr_separ || curr_white)) || (curr_separ && !prev_separ);
-}
-static int is_word_boundary_from_left(ImGuiInputTextState* obj, int idx)
-{
-    if ((obj->Flags & ImGuiInputTextFlags_Password) || idx <= 0)
-        return 0;
+    static int is_word_boundary_from_right(ImGuiInputTextState* obj, int idx)
+    {
+        // When ImGuiInputTextFlags_Password is set, we don't want actions such as CTRL+Arrow to leak the fact that underlying data are blanks or separators.
+        if ((obj->Flags & ImGuiInputTextFlags_Password) || idx <= 0)
+            return 0;
 
-    const char* curr_p = obj->TextA.Data + idx;
-    const char* prev_p = ImTextFindPreviousUtf8Codepoint(obj->TextA.Data, curr_p);
-    unsigned int prev_c; ImTextCharFromUtf8(&prev_c, curr_p, obj->TextA.Data + obj->TextA.Size);
-    unsigned int curr_c; ImTextCharFromUtf8(&curr_c, prev_p, obj->TextA.Data + obj->TextA.Size);
+        const char* curr_p = obj->TextA.Data + idx;
+        const char* prev_p = ImTextFindPreviousUtf8Codepoint(obj->TextA.Data, curr_p);
+        unsigned int curr_c; ImTextCharFromUtf8(&curr_c, curr_p, obj->TextA.Data + obj->TextA.Size);
+        unsigned int prev_c; ImTextCharFromUtf8(&prev_c, prev_p, obj->TextA.Data + obj->TextA.Size);
 
-    bool prev_white = ImCharIsBlankW(prev_c);
-    bool prev_separ = ImCharIsSeparatorW(prev_c);
-    bool curr_white = ImCharIsBlankW(curr_c);
-    bool curr_separ = ImCharIsSeparatorW(curr_c);
-    return ((prev_white) && !(curr_separ || curr_white)) || (curr_separ && !prev_separ);
-}
-static int  STB_TEXTEDIT_MOVEWORDLEFT_IMPL(ImGuiInputTextState* obj, int idx)
-{
-    idx = IMSTB_TEXTEDIT_GETPREVCHARINDEX(obj, idx);
-    while (idx >= 0 && !is_word_boundary_from_right(obj, idx))
+        bool prev_white = ImCharIsBlankW(prev_c);
+        bool prev_separ = ImCharIsSeparatorW(prev_c);
+        bool curr_white = ImCharIsBlankW(curr_c);
+        bool curr_separ = ImCharIsSeparatorW(curr_c);
+        return ((prev_white || prev_separ) && !(curr_separ || curr_white)) || (curr_separ && !prev_separ);
+    }
+    static int is_word_boundary_from_left(ImGuiInputTextState* obj, int idx)
+    {
+        if ((obj->Flags & ImGuiInputTextFlags_Password) || idx <= 0)
+            return 0;
+
+        const char* curr_p = obj->TextA.Data + idx;
+        const char* prev_p = ImTextFindPreviousUtf8Codepoint(obj->TextA.Data, curr_p);
+        unsigned int prev_c; ImTextCharFromUtf8(&prev_c, curr_p, obj->TextA.Data + obj->TextA.Size);
+        unsigned int curr_c; ImTextCharFromUtf8(&curr_c, prev_p, obj->TextA.Data + obj->TextA.Size);
+
+        bool prev_white = ImCharIsBlankW(prev_c);
+        bool prev_separ = ImCharIsSeparatorW(prev_c);
+        bool curr_white = ImCharIsBlankW(curr_c);
+        bool curr_separ = ImCharIsSeparatorW(curr_c);
+        return ((prev_white) && !(curr_separ || curr_white)) || (curr_separ && !prev_separ);
+    }
+    static int  STB_TEXTEDIT_MOVEWORDLEFT_IMPL(ImGuiInputTextState* obj, int idx)
+    {
         idx = IMSTB_TEXTEDIT_GETPREVCHARINDEX(obj, idx);
-    return idx < 0 ? 0 : idx;
-}
-static int  STB_TEXTEDIT_MOVEWORDRIGHT_MAC(ImGuiInputTextState* obj, int idx)
-{
-    int len = obj->CurLenA;
-    idx = IMSTB_TEXTEDIT_GETNEXTCHARINDEX(obj, idx);
-    while (idx < len && !is_word_boundary_from_left(obj, idx))
+        while (idx >= 0 && !is_word_boundary_from_right(obj, idx))
+            idx = IMSTB_TEXTEDIT_GETPREVCHARINDEX(obj, idx);
+        return idx < 0 ? 0 : idx;
+    }
+    static int  STB_TEXTEDIT_MOVEWORDRIGHT_MAC(ImGuiInputTextState* obj, int idx)
+    {
+        int len = obj->CurLenA;
         idx = IMSTB_TEXTEDIT_GETNEXTCHARINDEX(obj, idx);
-    return idx > len ? len : idx;
-}
-static int  STB_TEXTEDIT_MOVEWORDRIGHT_WIN(ImGuiInputTextState* obj, int idx)
-{
-    idx = IMSTB_TEXTEDIT_GETNEXTCHARINDEX(obj, idx);
-    int len = obj->CurLenA;
-    while (idx < len && !is_word_boundary_from_right(obj, idx))
+        while (idx < len && !is_word_boundary_from_left(obj, idx))
+            idx = IMSTB_TEXTEDIT_GETNEXTCHARINDEX(obj, idx);
+        return idx > len ? len : idx;
+    }
+    static int  STB_TEXTEDIT_MOVEWORDRIGHT_WIN(ImGuiInputTextState* obj, int idx)
+    {
         idx = IMSTB_TEXTEDIT_GETNEXTCHARINDEX(obj, idx);
-    return idx > len ? len : idx;
-}
-static int  STB_TEXTEDIT_MOVEWORDRIGHT_IMPL(ImGuiInputTextState* obj, int idx)  { ImGuiContext& g = *obj->Ctx; if (g.IO.ConfigMacOSXBehaviors) return STB_TEXTEDIT_MOVEWORDRIGHT_MAC(obj, idx); else return STB_TEXTEDIT_MOVEWORDRIGHT_WIN(obj, idx); }
+        int len = obj->CurLenA;
+        while (idx < len && !is_word_boundary_from_right(obj, idx))
+            idx = IMSTB_TEXTEDIT_GETNEXTCHARINDEX(obj, idx);
+        return idx > len ? len : idx;
+    }
+    static int  STB_TEXTEDIT_MOVEWORDRIGHT_IMPL(ImGuiInputTextState* obj, int idx) { ImGuiContext& g = *obj->Ctx; if (g.IO.ConfigMacOSXBehaviors) return STB_TEXTEDIT_MOVEWORDRIGHT_MAC(obj, idx); else return STB_TEXTEDIT_MOVEWORDRIGHT_WIN(obj, idx); }
 #define STB_TEXTEDIT_MOVEWORDLEFT       STB_TEXTEDIT_MOVEWORDLEFT_IMPL  // They need to be #define for stb_textedit.h
 #define STB_TEXTEDIT_MOVEWORDRIGHT      STB_TEXTEDIT_MOVEWORDRIGHT_IMPL
 
-static void STB_TEXTEDIT_DELETECHARS(ImGuiInputTextState* obj, int pos, int n)
-{
-    char* dst = obj->TextA.Data + pos;
-
-    obj->Edited = true;
-    obj->CurLenA -= n;
-
-    // Offset remaining text (FIXME-OPT: Use memmove)
-    const char* src = obj->TextA.Data + pos + n;
-    while (char c = *src++)
-        *dst++ = c;
-    *dst = '\0';
-}
-
-static bool STB_TEXTEDIT_INSERTCHARS(ImGuiInputTextState* obj, int pos, const char* new_text, int new_text_len)
-{
-    const bool is_resizable = (obj->Flags & ImGuiInputTextFlags_CallbackResize) != 0;
-    const int text_len = obj->CurLenA;
-    IM_ASSERT(pos <= text_len);
-
-    if (!is_resizable && (new_text_len + obj->CurLenA + 1 > obj->BufCapacityA))
-        return false;
-
-    // Grow internal buffer if needed
-    if (new_text_len + text_len + 1 > obj->TextA.Size)
+    static void STB_TEXTEDIT_DELETECHARS(ImGuiInputTextState* obj, int pos, int n)
     {
-        if (!is_resizable)
-            return false;
-        obj->TextA.resize(text_len + ImClamp(new_text_len, 32, ImMax(256, new_text_len)) + 1);
+        char* dst = obj->TextA.Data + pos;
+
+        obj->Edited = true;
+        obj->CurLenA -= n;
+
+        // Offset remaining text (FIXME-OPT: Use memmove)
+        const char* src = obj->TextA.Data + pos + n;
+        while (char c = *src++)
+            *dst++ = c;
+        *dst = '\0';
     }
 
-    char* text = obj->TextA.Data;
-    if (pos != text_len)
-        memmove(text + pos + new_text_len, text + pos, (size_t)(text_len - pos));
-    memcpy(text + pos, new_text, (size_t)new_text_len);
+    static bool STB_TEXTEDIT_INSERTCHARS(ImGuiInputTextState* obj, int pos, const char* new_text, int new_text_len)
+    {
+        const bool is_resizable = (obj->Flags & ImGuiInputTextFlags_CallbackResize) != 0;
+        const int text_len = obj->CurLenA;
+        IM_ASSERT(pos <= text_len);
 
-    obj->Edited = true;
-    obj->CurLenA += new_text_len;
-    obj->TextA[obj->CurLenA] = '\0';
+        if (!is_resizable && (new_text_len + obj->CurLenA + 1 > obj->BufCapacityA))
+            return false;
 
-    return true;
-}
+        // Grow internal buffer if needed
+        if (new_text_len + text_len + 1 > obj->TextA.Size)
+        {
+            if (!is_resizable)
+                return false;
+            obj->TextA.resize(text_len + ImClamp(new_text_len, 32, ImMax(256, new_text_len)) + 1);
+        }
 
-// We don't use an enum so we can build even with conflicting symbols (if another user of stb_textedit.h leak their STB_TEXTEDIT_K_* symbols)
+        char* text = obj->TextA.Data;
+        if (pos != text_len)
+            memmove(text + pos + new_text_len, text + pos, (size_t)(text_len - pos));
+        memcpy(text + pos, new_text, (size_t)new_text_len);
+
+        obj->Edited = true;
+        obj->CurLenA += new_text_len;
+        obj->TextA[obj->CurLenA] = '\0';
+
+        return true;
+    }
+
+    // We don't use an enum so we can build even with conflicting symbols (if another user of stb_textedit.h leak their STB_TEXTEDIT_K_* symbols)
 #define STB_TEXTEDIT_K_LEFT         0x200000 // keyboard input to move cursor left
 #define STB_TEXTEDIT_K_RIGHT        0x200001 // keyboard input to move cursor right
 #define STB_TEXTEDIT_K_UP           0x200002 // keyboard input to move cursor up
@@ -4930,21 +4975,21 @@ static bool STB_TEXTEDIT_INSERTCHARS(ImGuiInputTextState* obj, int pos, const ch
 
 // stb_textedit internally allows for a single undo record to do addition and deletion, but somehow, calling
 // the stb_textedit_paste() function creates two separate records, so we perform it manually. (FIXME: Report to nothings/stb?)
-static void stb_textedit_replace(ImGuiInputTextState* str, STB_TexteditState* state, const IMSTB_TEXTEDIT_CHARTYPE* text, int text_len)
-{
-    stb_text_makeundo_replace(str, state, 0, str->CurLenA, text_len);
-    ImStb::STB_TEXTEDIT_DELETECHARS(str, 0, str->CurLenA);
-    state->cursor = state->select_start = state->select_end = 0;
-    if (text_len <= 0)
-        return;
-    if (ImStb::STB_TEXTEDIT_INSERTCHARS(str, 0, text, text_len))
+    static void stb_textedit_replace(ImGuiInputTextState* str, STB_TexteditState* state, const IMSTB_TEXTEDIT_CHARTYPE* text, int text_len)
     {
-        state->cursor = state->select_start = state->select_end = text_len;
-        state->has_preferred_x = 0;
-        return;
+        stb_text_makeundo_replace(str, state, 0, str->CurLenA, text_len);
+        ImStb::STB_TEXTEDIT_DELETECHARS(str, 0, str->CurLenA);
+        state->cursor = state->select_start = state->select_end = 0;
+        if (text_len <= 0)
+            return;
+        if (ImStb::STB_TEXTEDIT_INSERTCHARS(str, 0, text, text_len))
+        {
+            state->cursor = state->select_start = state->select_end = text_len;
+            state->has_preferred_x = 0;
+            return;
+        }
+        IM_ASSERT(0); // Failed to insert character, normally shouldn't happen because of how we currently use stb_textedit_replace()
     }
-    IM_ASSERT(0); // Failed to insert character, normally shouldn't happen because of how we currently use stb_textedit_replace()
-}
 
 } // namespace ImStb
 
@@ -4979,17 +5024,17 @@ void ImGuiInputTextState::OnCharPressed(unsigned int c)
 }
 
 // Those functions are not inlined in imgui_internal.h, allowing us to hide ImStbTexteditState from that header.
-void ImGuiInputTextState::CursorAnimReset()                 { CursorAnim = -0.30f; } // After a user-input the cursor stays on for a while without blinking
-void ImGuiInputTextState::CursorClamp()                     { Stb->cursor = ImMin(Stb->cursor, CurLenA); Stb->select_start = ImMin(Stb->select_start, CurLenA); Stb->select_end = ImMin(Stb->select_end, CurLenA); }
-bool ImGuiInputTextState::HasSelection() const              { return Stb->select_start != Stb->select_end; }
-void ImGuiInputTextState::ClearSelection()                  { Stb->select_start = Stb->select_end = Stb->cursor; }
-int  ImGuiInputTextState::GetCursorPos() const              { return Stb->cursor; }
-int  ImGuiInputTextState::GetSelectionStart() const         { return Stb->select_start; }
-int  ImGuiInputTextState::GetSelectionEnd() const           { return Stb->select_end; }
-void ImGuiInputTextState::SelectAll()                       { Stb->select_start = 0; Stb->cursor = Stb->select_end = CurLenA; Stb->has_preferred_x = 0; }
-void ImGuiInputTextState::ReloadUserBufAndSelectAll()       { ReloadUserBuf = true; ReloadSelectionStart = 0; ReloadSelectionEnd = INT_MAX; }
-void ImGuiInputTextState::ReloadUserBufAndKeepSelection()   { ReloadUserBuf = true; ReloadSelectionStart = Stb->select_start; ReloadSelectionEnd = Stb->select_end; }
-void ImGuiInputTextState::ReloadUserBufAndMoveToEnd()       { ReloadUserBuf = true; ReloadSelectionStart = ReloadSelectionEnd = INT_MAX; }
+void ImGuiInputTextState::CursorAnimReset() { CursorAnim = -0.30f; } // After a user-input the cursor stays on for a while without blinking
+void ImGuiInputTextState::CursorClamp() { Stb->cursor = ImMin(Stb->cursor, CurLenA); Stb->select_start = ImMin(Stb->select_start, CurLenA); Stb->select_end = ImMin(Stb->select_end, CurLenA); }
+bool ImGuiInputTextState::HasSelection() const { return Stb->select_start != Stb->select_end; }
+void ImGuiInputTextState::ClearSelection() { Stb->select_start = Stb->select_end = Stb->cursor; }
+int  ImGuiInputTextState::GetCursorPos() const { return Stb->cursor; }
+int  ImGuiInputTextState::GetSelectionStart() const { return Stb->select_start; }
+int  ImGuiInputTextState::GetSelectionEnd() const { return Stb->select_end; }
+void ImGuiInputTextState::SelectAll() { Stb->select_start = 0; Stb->cursor = Stb->select_end = CurLenA; Stb->has_preferred_x = 0; }
+void ImGuiInputTextState::ReloadUserBufAndSelectAll() { ReloadUserBuf = true; ReloadSelectionStart = 0; ReloadSelectionEnd = INT_MAX; }
+void ImGuiInputTextState::ReloadUserBufAndKeepSelection() { ReloadUserBuf = true; ReloadSelectionStart = Stb->select_start; ReloadSelectionEnd = Stb->select_end; }
+void ImGuiInputTextState::ReloadUserBufAndMoveToEnd() { ReloadUserBuf = true; ReloadSelectionStart = ReloadSelectionEnd = INT_MAX; }
 
 ImGuiInputTextCallbackData::ImGuiInputTextCallbackData()
 {
@@ -5170,7 +5215,7 @@ static void InputTextReconcileUndoStateAfterUserCallback(ImGuiInputTextState* st
     if (first_diff == old_length && first_diff == new_length_a)
         return;
 
-    int old_last_diff = old_length   - 1;
+    int old_last_diff = old_length - 1;
     int new_last_diff = new_length_a - 1;
     for (; old_last_diff >= first_diff && new_last_diff >= first_diff; old_last_diff--, new_last_diff--)
         if (old_buf[old_last_diff] != new_buf_a[new_last_diff])
@@ -5591,11 +5636,11 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
         // Using Shortcut() with ImGuiInputFlags_RouteFocused (default policy) to allow routing operations for other code (e.g. calling window trying to use CTRL+A and CTRL+B: formet would be handled by InputText)
         // Otherwise we could simply assume that we own the keys as we are active.
         const ImGuiInputFlags f_repeat = ImGuiInputFlags_Repeat;
-        const bool is_cut   = (Shortcut(ImGuiMod_Ctrl | ImGuiKey_X, f_repeat, id) || Shortcut(ImGuiMod_Shift | ImGuiKey_Delete, f_repeat, id)) && !is_readonly && !is_password && (!is_multiline || state->HasSelection());
-        const bool is_copy  = (Shortcut(ImGuiMod_Ctrl | ImGuiKey_C, 0,        id) || Shortcut(ImGuiMod_Ctrl  | ImGuiKey_Insert, 0,        id)) && !is_password && (!is_multiline || state->HasSelection());
+        const bool is_cut = (Shortcut(ImGuiMod_Ctrl | ImGuiKey_X, f_repeat, id) || Shortcut(ImGuiMod_Shift | ImGuiKey_Delete, f_repeat, id)) && !is_readonly && !is_password && (!is_multiline || state->HasSelection());
+        const bool is_copy = (Shortcut(ImGuiMod_Ctrl | ImGuiKey_C, 0, id) || Shortcut(ImGuiMod_Ctrl | ImGuiKey_Insert, 0, id)) && !is_password && (!is_multiline || state->HasSelection());
         const bool is_paste = (Shortcut(ImGuiMod_Ctrl | ImGuiKey_V, f_repeat, id) || Shortcut(ImGuiMod_Shift | ImGuiKey_Insert, f_repeat, id)) && !is_readonly;
-        const bool is_undo  = (Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, f_repeat, id)) && !is_readonly && is_undoable;
-        const bool is_redo =  (Shortcut(ImGuiMod_Ctrl | ImGuiKey_Y, f_repeat, id) || (is_osx && Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z, f_repeat, id))) && !is_readonly && is_undoable;
+        const bool is_undo = (Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, f_repeat, id)) && !is_readonly && is_undoable;
+        const bool is_redo = (Shortcut(ImGuiMod_Ctrl | ImGuiKey_Y, f_repeat, id) || (is_osx && Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z, f_repeat, id))) && !is_readonly && is_undoable;
         const bool is_select_all = Shortcut(ImGuiMod_Ctrl | ImGuiKey_A, 0, id);
 
         // We allow validate/cancel with Nav source (gamepad) to makes it easier to undo an accidental NavInput press with no keyboard wired, but otherwise it isn't very useful.
@@ -5606,14 +5651,14 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
 
         // FIXME: Should use more Shortcut() and reduce IsKeyPressed()+SetKeyOwner(), but requires modifiers combination to be taken account of.
         // FIXME-OSX: Missing support for Alt(option)+Right/Left = go to end of line, or next line if already in end of line.
-        if (IsKeyPressed(ImGuiKey_LeftArrow))                        { state->OnKeyPressed((is_startend_key_down ? STB_TEXTEDIT_K_LINESTART : is_wordmove_key_down ? STB_TEXTEDIT_K_WORDLEFT : STB_TEXTEDIT_K_LEFT) | k_mask); }
-        else if (IsKeyPressed(ImGuiKey_RightArrow))                  { state->OnKeyPressed((is_startend_key_down ? STB_TEXTEDIT_K_LINEEND : is_wordmove_key_down ? STB_TEXTEDIT_K_WORDRIGHT : STB_TEXTEDIT_K_RIGHT) | k_mask); }
-        else if (IsKeyPressed(ImGuiKey_UpArrow) && is_multiline)     { if (io.KeyCtrl) SetScrollY(draw_window, ImMax(draw_window->Scroll.y - g.FontSize, 0.0f)); else state->OnKeyPressed((is_startend_key_down ? STB_TEXTEDIT_K_TEXTSTART : STB_TEXTEDIT_K_UP) | k_mask); }
-        else if (IsKeyPressed(ImGuiKey_DownArrow) && is_multiline)   { if (io.KeyCtrl) SetScrollY(draw_window, ImMin(draw_window->Scroll.y + g.FontSize, GetScrollMaxY())); else state->OnKeyPressed((is_startend_key_down ? STB_TEXTEDIT_K_TEXTEND : STB_TEXTEDIT_K_DOWN) | k_mask); }
-        else if (IsKeyPressed(ImGuiKey_PageUp) && is_multiline)      { state->OnKeyPressed(STB_TEXTEDIT_K_PGUP | k_mask); scroll_y -= row_count_per_page * g.FontSize; }
-        else if (IsKeyPressed(ImGuiKey_PageDown) && is_multiline)    { state->OnKeyPressed(STB_TEXTEDIT_K_PGDOWN | k_mask); scroll_y += row_count_per_page * g.FontSize; }
-        else if (IsKeyPressed(ImGuiKey_Home))                        { state->OnKeyPressed(io.KeyCtrl ? STB_TEXTEDIT_K_TEXTSTART | k_mask : STB_TEXTEDIT_K_LINESTART | k_mask); }
-        else if (IsKeyPressed(ImGuiKey_End))                         { state->OnKeyPressed(io.KeyCtrl ? STB_TEXTEDIT_K_TEXTEND | k_mask : STB_TEXTEDIT_K_LINEEND | k_mask); }
+        if (IsKeyPressed(ImGuiKey_LeftArrow)) { state->OnKeyPressed((is_startend_key_down ? STB_TEXTEDIT_K_LINESTART : is_wordmove_key_down ? STB_TEXTEDIT_K_WORDLEFT : STB_TEXTEDIT_K_LEFT) | k_mask); }
+        else if (IsKeyPressed(ImGuiKey_RightArrow)) { state->OnKeyPressed((is_startend_key_down ? STB_TEXTEDIT_K_LINEEND : is_wordmove_key_down ? STB_TEXTEDIT_K_WORDRIGHT : STB_TEXTEDIT_K_RIGHT) | k_mask); }
+        else if (IsKeyPressed(ImGuiKey_UpArrow) && is_multiline) { if (io.KeyCtrl) SetScrollY(draw_window, ImMax(draw_window->Scroll.y - g.FontSize, 0.0f)); else state->OnKeyPressed((is_startend_key_down ? STB_TEXTEDIT_K_TEXTSTART : STB_TEXTEDIT_K_UP) | k_mask); }
+        else if (IsKeyPressed(ImGuiKey_DownArrow) && is_multiline) { if (io.KeyCtrl) SetScrollY(draw_window, ImMin(draw_window->Scroll.y + g.FontSize, GetScrollMaxY())); else state->OnKeyPressed((is_startend_key_down ? STB_TEXTEDIT_K_TEXTEND : STB_TEXTEDIT_K_DOWN) | k_mask); }
+        else if (IsKeyPressed(ImGuiKey_PageUp) && is_multiline) { state->OnKeyPressed(STB_TEXTEDIT_K_PGUP | k_mask); scroll_y -= row_count_per_page * g.FontSize; }
+        else if (IsKeyPressed(ImGuiKey_PageDown) && is_multiline) { state->OnKeyPressed(STB_TEXTEDIT_K_PGDOWN | k_mask); scroll_y += row_count_per_page * g.FontSize; }
+        else if (IsKeyPressed(ImGuiKey_Home)) { state->OnKeyPressed(io.KeyCtrl ? STB_TEXTEDIT_K_TEXTSTART | k_mask : STB_TEXTEDIT_K_LINESTART | k_mask); }
+        else if (IsKeyPressed(ImGuiKey_End)) { state->OnKeyPressed(io.KeyCtrl ? STB_TEXTEDIT_K_TEXTEND | k_mask : STB_TEXTEDIT_K_LINEEND | k_mask); }
         else if (IsKeyPressed(ImGuiKey_Delete) && !is_readonly && !is_cut)
         {
             if (!state->HasSelection())
@@ -5845,9 +5890,9 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
                     IM_ASSERT(callback_data.BufSize == state->BufCapacityA);
                     IM_ASSERT(callback_data.Flags == flags);
                     const bool buf_dirty = callback_data.BufDirty;
-                    if (callback_data.CursorPos != utf8_cursor_pos || buf_dirty)            { state->Stb->cursor = callback_data.CursorPos; state->CursorFollow = true; }
-                    if (callback_data.SelectionStart != utf8_selection_start || buf_dirty)  { state->Stb->select_start = (callback_data.SelectionStart == callback_data.CursorPos) ? state->Stb->cursor : callback_data.SelectionStart; }
-                    if (callback_data.SelectionEnd != utf8_selection_end || buf_dirty)      { state->Stb->select_end = (callback_data.SelectionEnd == callback_data.SelectionStart) ? state->Stb->select_start : callback_data.SelectionEnd; }
+                    if (callback_data.CursorPos != utf8_cursor_pos || buf_dirty) { state->Stb->cursor = callback_data.CursorPos; state->CursorFollow = true; }
+                    if (callback_data.SelectionStart != utf8_selection_start || buf_dirty) { state->Stb->select_start = (callback_data.SelectionStart == callback_data.CursorPos) ? state->Stb->cursor : callback_data.SelectionStart; }
+                    if (callback_data.SelectionEnd != utf8_selection_end || buf_dirty) { state->Stb->select_end = (callback_data.SelectionEnd == callback_data.SelectionStart) ? state->Stb->select_start : callback_data.SelectionEnd; }
                     if (buf_dirty)
                     {
                         // Callback may update buffer and thus set buf_dirty even in read-only mode.
@@ -6496,10 +6541,10 @@ bool ImGui::ColorPicker3(const char* label, float col[3], ImGuiColorEditFlags fl
 static void RenderArrowsForVerticalBar(ImDrawList* draw_list, ImVec2 pos, ImVec2 half_sz, float bar_w, float alpha)
 {
     ImU32 alpha8 = IM_F32_TO_INT8_SAT(alpha);
-    ImGui::RenderArrowPointingAt(draw_list, ImVec2(pos.x + half_sz.x + 1,         pos.y), ImVec2(half_sz.x + 2, half_sz.y + 1), ImGuiDir_Right, IM_COL32(0,0,0,alpha8));
-    ImGui::RenderArrowPointingAt(draw_list, ImVec2(pos.x + half_sz.x,             pos.y), half_sz,                              ImGuiDir_Right, IM_COL32(255,255,255,alpha8));
-    ImGui::RenderArrowPointingAt(draw_list, ImVec2(pos.x + bar_w - half_sz.x - 1, pos.y), ImVec2(half_sz.x + 2, half_sz.y + 1), ImGuiDir_Left,  IM_COL32(0,0,0,alpha8));
-    ImGui::RenderArrowPointingAt(draw_list, ImVec2(pos.x + bar_w - half_sz.x,     pos.y), half_sz,                              ImGuiDir_Left,  IM_COL32(255,255,255,alpha8));
+    ImGui::RenderArrowPointingAt(draw_list, ImVec2(pos.x + half_sz.x + 1, pos.y), ImVec2(half_sz.x + 2, half_sz.y + 1), ImGuiDir_Right, IM_COL32(0, 0, 0, alpha8));
+    ImGui::RenderArrowPointingAt(draw_list, ImVec2(pos.x + half_sz.x, pos.y), half_sz, ImGuiDir_Right, IM_COL32(255, 255, 255, alpha8));
+    ImGui::RenderArrowPointingAt(draw_list, ImVec2(pos.x + bar_w - half_sz.x - 1, pos.y), ImVec2(half_sz.x + 2, half_sz.y + 1), ImGuiDir_Left, IM_COL32(0, 0, 0, alpha8));
+    ImGui::RenderArrowPointingAt(draw_list, ImVec2(pos.x + bar_w - half_sz.x, pos.y), half_sz, ImGuiDir_Left, IM_COL32(255, 255, 255, alpha8));
 }
 
 // Note: ColorPicker4() only accesses 3 floats if ImGuiColorEditFlags_NoAlpha flag is set.
@@ -6561,7 +6606,7 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
     float wheel_thickness = sv_picker_size * 0.08f;
     float wheel_r_outer = sv_picker_size * 0.50f;
     float wheel_r_inner = wheel_r_outer - wheel_thickness;
-    ImVec2 wheel_center(picker_pos.x + (sv_picker_size + bars_width)*0.5f, picker_pos.y + sv_picker_size * 0.5f);
+    ImVec2 wheel_center(picker_pos.x + (sv_picker_size + bars_width) * 0.5f, picker_pos.y + sv_picker_size * 0.5f);
 
     // Note: the triangle is displayed rotated with triangle_pa pointing to Hue, but most coordinates stays unrotated for logic.
     float triangle_r = wheel_r_inner - (int)(sv_picker_size * 0.027f);
@@ -6772,9 +6817,9 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
     }
 
     const int style_alpha8 = IM_F32_TO_INT8_SAT(style.Alpha);
-    const ImU32 col_black = IM_COL32(0,0,0,style_alpha8);
-    const ImU32 col_white = IM_COL32(255,255,255,style_alpha8);
-    const ImU32 col_midgrey = IM_COL32(128,128,128,style_alpha8);
+    const ImU32 col_black = IM_COL32(0, 0, 0, style_alpha8);
+    const ImU32 col_white = IM_COL32(255, 255, 255, style_alpha8);
+    const ImU32 col_midgrey = IM_COL32(128, 128, 128, style_alpha8);
     const ImU32 col_hues[6 + 1] = { IM_COL32(255,0,0,style_alpha8), IM_COL32(255,255,0,style_alpha8), IM_COL32(0,255,0,style_alpha8), IM_COL32(0,255,255,style_alpha8), IM_COL32(0,0,255,style_alpha8), IM_COL32(255,0,255,style_alpha8), IM_COL32(255,0,0,style_alpha8) };
 
     ImVec4 hue_color_f(1, 1, 1, style.Alpha); ColorConvertHSVtoRGB(H, 1, 1, hue_color_f.x, hue_color_f.y, hue_color_f.z);
@@ -6790,10 +6835,10 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
         const int segment_per_arc = ImMax(4, (int)wheel_r_outer / 12);
         for (int n = 0; n < 6; n++)
         {
-            const float a0 = (n)     /6.0f * 2.0f * IM_PI - aeps;
-            const float a1 = (n+1.0f)/6.0f * 2.0f * IM_PI + aeps;
+            const float a0 = (n) / 6.0f * 2.0f * IM_PI - aeps;
+            const float a1 = (n + 1.0f) / 6.0f * 2.0f * IM_PI + aeps;
             const int vert_start_idx = draw_list->VtxBuffer.Size;
-            draw_list->PathArcTo(wheel_center, (wheel_r_inner + wheel_r_outer)*0.5f, a0, a1, segment_per_arc);
+            draw_list->PathArcTo(wheel_center, (wheel_r_inner + wheel_r_outer) * 0.5f, a0, a1, segment_per_arc);
             draw_list->PathStroke(col_white, 0, wheel_thickness);
             const int vert_end_idx = draw_list->VtxBuffer.Size;
 
@@ -6831,7 +6876,7 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
         draw_list->AddRectFilledMultiColor(picker_pos, picker_pos + ImVec2(sv_picker_size, sv_picker_size), col_white, hue_color32, hue_color32, col_white);
         draw_list->AddRectFilledMultiColor(picker_pos, picker_pos + ImVec2(sv_picker_size, sv_picker_size), 0, 0, col_black, col_black);
         RenderFrameBorder(picker_pos, picker_pos + ImVec2(sv_picker_size, sv_picker_size), 0.0f);
-        sv_cursor_pos.x = ImClamp(IM_ROUND(picker_pos.x + ImSaturate(S)     * sv_picker_size), picker_pos.x + 2, picker_pos.x + sv_picker_size - 2); // Sneakily prevent the circle to stick out too much
+        sv_cursor_pos.x = ImClamp(IM_ROUND(picker_pos.x + ImSaturate(S) * sv_picker_size), picker_pos.x + 2, picker_pos.x + sv_picker_size - 2); // Sneakily prevent the circle to stick out too much
         sv_cursor_pos.y = ImClamp(IM_ROUND(picker_pos.y + ImSaturate(1 - V) * sv_picker_size), picker_pos.y + 2, picker_pos.y + sv_picker_size - 2);
 
         // Render Hue Bar
@@ -7032,7 +7077,7 @@ void ImGui::ColorEditOptionsPopup(const float* col, ImGuiColorEditFlags flags)
     if (allow_opt_datatype)
     {
         if (allow_opt_inputs) Separator();
-        if (RadioButton("0..255",     (opts & ImGuiColorEditFlags_Uint8) != 0)) opts = (opts & ~ImGuiColorEditFlags_DataTypeMask_) | ImGuiColorEditFlags_Uint8;
+        if (RadioButton("0..255", (opts & ImGuiColorEditFlags_Uint8) != 0)) opts = (opts & ~ImGuiColorEditFlags_DataTypeMask_) | ImGuiColorEditFlags_Uint8;
         if (RadioButton("0.00..1.00", (opts & ImGuiColorEditFlags_Float) != 0)) opts = (opts & ~ImGuiColorEditFlags_DataTypeMask_) | ImGuiColorEditFlags_Float;
     }
 
@@ -7193,7 +7238,7 @@ bool ImGui::TreeNodeExV(const char* str_id, ImGuiTreeNodeFlags flags, const char
         return false;
 
     ImGuiID id = window->GetID(str_id);
-    const char* label, *label_end;
+    const char* label, * label_end;
     ImFormatStringToTempBufferV(&label, &label_end, fmt, args);
     return TreeNodeBehavior(id, flags, label, label_end);
 }
@@ -7205,7 +7250,7 @@ bool ImGui::TreeNodeExV(const void* ptr_id, ImGuiTreeNodeFlags flags, const char
         return false;
 
     ImGuiID id = window->GetID(ptr_id);
-    const char* label, *label_end;
+    const char* label, * label_end;
     ImFormatStringToTempBufferV(&label, &label_end, fmt, args);
     return TreeNodeBehavior(id, flags, label, label_end);
 }
@@ -9168,7 +9213,7 @@ int ImGui::PlotEx(ImGuiPlotType plot_type, const char* label, float (*values_get
 
         float v0 = values_getter(data, (0 + values_offset) % values_count);
         float t0 = 0.0f;
-        ImVec2 tp0 = ImVec2( t0, 1.0f - ImSaturate((v0 - scale_min) * inv_scale) );                       // Point in the normalized space of our target rectangle
+        ImVec2 tp0 = ImVec2(t0, 1.0f - ImSaturate((v0 - scale_min) * inv_scale));                       // Point in the normalized space of our target rectangle
         float histogram_zero_line_t = (scale_min * scale_max < 0.0f) ? (1 + scale_min * inv_scale) : (scale_min < 0.0f ? 0.0f : 1.0f);   // Where does the zero line stands
 
         const ImU32 col_base = GetColorU32((plot_type == ImGuiPlotType_Lines) ? ImGuiCol_PlotLines : ImGuiCol_PlotHistogram);
@@ -9180,7 +9225,7 @@ int ImGui::PlotEx(ImGuiPlotType plot_type, const char* label, float (*values_get
             const int v1_idx = (int)(t0 * item_count + 0.5f);
             IM_ASSERT(v1_idx >= 0 && v1_idx < values_count);
             const float v1 = values_getter(data, (v1_idx + values_offset + 1) % values_count);
-            const ImVec2 tp1 = ImVec2( t1, 1.0f - ImSaturate((v1 - scale_min) * inv_scale) );
+            const ImVec2 tp1 = ImVec2(t1, 1.0f - ImSaturate((v1 - scale_min) * inv_scale));
 
             // NB: Draw calls are merged together by the DrawList system. Still, we should render our batch are lower level to save a bit of CPU.
             ImVec2 pos0 = ImLerp(inner_bb.Min, inner_bb.Max, tp0);
@@ -9890,8 +9935,8 @@ namespace ImGui
     static float            TabBarCalcMaxTabWidth();
     static float            TabBarScrollClamp(ImGuiTabBar* tab_bar, float scrolling);
     static void             TabBarScrollToTab(ImGuiTabBar* tab_bar, ImGuiID tab_id, ImGuiTabBarSection* sections);
-    static ImGuiTabItem*    TabBarScrollingButtons(ImGuiTabBar* tab_bar);
-    static ImGuiTabItem*    TabBarTabListPopupButton(ImGuiTabBar* tab_bar);
+    static ImGuiTabItem* TabBarScrollingButtons(ImGuiTabBar* tab_bar);
+    static ImGuiTabItem* TabBarTabListPopupButton(ImGuiTabBar* tab_bar);
 }
 
 ImGuiTabBar::ImGuiTabBar()
@@ -10464,8 +10509,8 @@ void ImGui::TabBarRemoveTab(ImGuiTabBar* tab_bar, ImGuiID tab_id)
 {
     if (ImGuiTabItem* tab = TabBarFindTabByID(tab_bar, tab_id))
         tab_bar->Tabs.erase(tab);
-    if (tab_bar->VisibleTabId == tab_id)      { tab_bar->VisibleTabId = 0; }
-    if (tab_bar->SelectedTabId == tab_id)     { tab_bar->SelectedTabId = 0; }
+    if (tab_bar->VisibleTabId == tab_id) { tab_bar->VisibleTabId = 0; }
+    if (tab_bar->SelectedTabId == tab_id) { tab_bar->SelectedTabId = 0; }
     if (tab_bar->NextSelectedTabId == tab_id) { tab_bar->NextSelectedTabId = 0; }
 }
 
@@ -11126,57 +11171,173 @@ void ImGui::RenderGradientTextCentered(const char* text, ImU32 start_color, ImU3
     // ImGui::PopFont();
 }
 
+// Helper function to calculate gradient animation phase
+float ImGui::CalcGradientPhase(float time, float frequency, float offset)
+{
+    return 0.5f + 0.5f * std::sinf(time * frequency + offset);
+}
+
 void ImGui::CategoryHeader(const char* label, const ImVec4& theme_color, float menu_alpha)
 {
-    // NOTE: If you don't have Fonts::Bold included, remove PushFont/PopFont
-    // ImGui::PushFont(Fonts::Bold);
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems) return;
+
+    // --- CHANGE START: Push the High Quality Font ---
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.Fonts->Fonts.Size > 1)
+        ImGui::PushFont(io.Fonts->Fonts[1]); // Index 1 is Stolzl Medium
+    else
+        ImGui::PushFont(io.Fonts->Fonts[0]); // Fallback
+    // --- CHANGE END ---
+
+    ImGuiContext& g = *GImGui;
+    float time = (float)g.Time;
 
     ImVec2 pos = ImGui::GetCursorScreenPos();
 
-    // Use invisible text for layout and cursor advancement
+    // Make category header bigger
+    // Note: Since Stolzl is already a crisp font, you might want to lower this to 1.0f or 1.1f 
+    // if the header looks too large now.
+    const float scale = 1.25f;
+    ImGui::SetWindowFontScale(scale);
+
+    ImVec2 label_size = CalcTextSize(label);
+    float width = GetContentRegionAvail().x;
+
+    // Invisible spacer for layout
+    // (This now calculates spacing using the correct Stolzl font metrics)
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 0));
     ImGui::Text(label);
     ImGui::PopStyleColor();
 
-    ImU32 start_col = ImColor(ImMin(1.0f, theme_color.x * 1.3f), ImMin(1.0f, theme_color.y * 1.3f), ImMin(1.0f, theme_color.z * 1.3f), menu_alpha);
-    ImU32 end_col = ImColor(theme_color.x * 0.7f, theme_color.y * 0.7f, theme_color.z * 0.7f, menu_alpha);
+    // Animated gradient phase - smooth flowing colors
+    float gradPhase = CalcGradientPhase(time, AnimTiming::GRADIENT_FREQ_PRIMARY);
+
+    // Use shared gradient constants for consistency - matching Menu.hpp pattern
+    ImU32 start_col = ImColor(
+        ImMin(1.0f, theme_color.x + AnimTiming::GRAD_LIFT + AnimTiming::GRAD_VARIANCE * gradPhase),
+        ImMin(1.0f, theme_color.y + AnimTiming::GRAD_Y_OFFSET * gradPhase),
+        ImMin(1.0f, theme_color.z + AnimTiming::GRAD_ACCENT_LIFT * gradPhase),
+        menu_alpha * 0.95f
+    );
+    ImU32 end_col = ImColor(
+        ImMin(1.0f, theme_color.x * (AnimTiming::GRAD_BASE_SCALE + AnimTiming::GRAD_SCALE_VARIANCE * gradPhase)),
+        ImMin(1.0f, theme_color.y * (AnimTiming::GRAD_BASE_SCALE + AnimTiming::GRAD_SCALE_VARIANCE * gradPhase)),
+        ImMin(1.0f, theme_color.z * (AnimTiming::GRAD_ACCENT_SCALE + AnimTiming::GRAD_VARIANCE * gradPhase)),
+        menu_alpha * 0.85f
+    );
+
+    // Render animated gradient text
     ImGui::RenderGradientText(label, pos, start_col, end_col);
 
-    // ImGui::PopFont();
-}
+    ImGui::SetWindowFontScale(1.0f);
 
+    // --- CHANGE START: Restore the Default (Pixel) Font ---
+    ImGui::PopFont();
+    // --- CHANGE END ---
+}
 bool ImGui::SubCategoryButton(const char* label, bool selected, ImVec4 theme_color)
 {
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems) return false;
+
+    ImGuiContext& g = *GImGui;
+    const ImGuiID id = window->GetID(label);
+    float time = (float)g.Time;
+
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
-    float button_height = 25.0f;
-    float indent = 5.f;
+    float button_height = 24.0f;  // Compact height
+    float button_width = GetContentRegionAvail().x;
+    const float rounding = 6.0f;
 
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.05f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.02f));
-    ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 0.5f));
+    ImRect bb(cursor_pos, ImVec2(cursor_pos.x + button_width, cursor_pos.y + button_height));
+    ItemSize(bb);
+    if (!ItemAdd(bb, id)) return false;
 
-    ImU32 text_color;
-    if (selected) {
-        text_color = IM_COL32_WHITE;
+    bool hovered, held;
+    bool pressed = ButtonBehavior(bb, id, &hovered, &held);
+
+    // Animation state - faster
+    static std::map<ImGuiID, float> hover_anims;
+    static std::map<ImGuiID, float> select_anims;
+
+    auto& hover_anim = hover_anims[id];
+    auto& select_anim = select_anims[id];
+
+    float dt = g.IO.DeltaTime;
+    float smoothT = 1.0f - std::exp(-14.0f * dt);
+
+    hover_anim = hover_anim + ((hovered ? 1.0f : 0.0f) - hover_anim) * smoothT;
+    select_anim = select_anim + ((selected ? 1.0f : 0.0f) - select_anim) * smoothT;
+
+    // Background with hover effect - subtle
+    if (hover_anim > 0.01f || select_anim > 0.01f) {
+        ImU32 bg_col = IM_COL32(
+            static_cast<int>(25 + theme_color.x * 25 * select_anim),
+            static_cast<int>(25 + theme_color.y * 25 * select_anim),
+            static_cast<int>(30 + theme_color.z * 35 * select_anim),
+            static_cast<int>((30 * hover_anim + 50 * select_anim))
+        );
+        draw_list->AddRectFilled(bb.Min, bb.Max, bg_col, rounding);
+    }
+
+    // Left accent indicator - compact with animated glow
+    if (select_anim > 0.01f) {
+        float indicator_height = button_height * 0.5f * select_anim;
+        float indicator_y = cursor_pos.y + (button_height - indicator_height) * 0.5f;
+
+        // Animated glow intensity using helper (ranges from 0.4 to 1.0)
+        float glowPhase = 0.4f + 0.6f * CalcGradientPhase(time, AnimTiming::GRADIENT_FREQ_GLOW);
+
+        ImU32 indicator_col = ColorConvertFloat4ToU32(ImVec4(
+            theme_color.x * glowPhase,
+            theme_color.y * glowPhase,
+            theme_color.z * glowPhase,
+            select_anim
+        ));
+        draw_list->AddRectFilled(
+            ImVec2(cursor_pos.x, indicator_y),
+            ImVec2(cursor_pos.x + 2, indicator_y + indicator_height),
+            indicator_col, 1.0f
+        );
+    }
+
+    // Animated gradient text for selected state
+    ImVec2 text_pos(cursor_pos.x + 8, cursor_pos.y + (button_height - CalcTextSize(label).y) * 0.5f);
+
+    if (select_anim > 0.5f) {
+        // Animated gradient for selected items - matching Menu.hpp pattern
+        float gradPhase = CalcGradientPhase(time, AnimTiming::GRADIENT_FREQ_FAST);
+
+        // Use shared gradient constants for consistency
+        ImU32 start_col = ImColor(
+            ImMin(1.0f, theme_color.x + AnimTiming::GRAD_LIFT + AnimTiming::GRAD_VARIANCE * gradPhase),
+            ImMin(1.0f, theme_color.y + AnimTiming::GRAD_Y_OFFSET * gradPhase),
+            ImMin(1.0f, theme_color.z + AnimTiming::GRAD_ACCENT_LIFT * gradPhase),
+            1.0f
+        );
+        ImU32 end_col = ImColor(
+            ImMin(1.0f, theme_color.x * (AnimTiming::GRAD_BASE_SCALE + AnimTiming::GRAD_SCALE_VARIANCE * gradPhase)),
+            ImMin(1.0f, theme_color.y * (AnimTiming::GRAD_BASE_SCALE + AnimTiming::GRAD_SCALE_VARIANCE * gradPhase)),
+            ImMin(1.0f, theme_color.z * (AnimTiming::GRAD_ACCENT_SCALE + AnimTiming::GRAD_VARIANCE * gradPhase)),
+            0.95f
+        );
+        ImGui::RenderGradientText(label, text_pos, start_col, end_col);
     }
     else {
-        text_color = IM_COL32(120, 120, 120, 255);
+        // Regular text color for non-selected
+        float brightness = 0.5f + hover_anim * 0.2f + select_anim * 0.3f;
+        ImU32 text_color = IM_COL32(
+            static_cast<int>(brightness * 255),
+            static_cast<int>(brightness * 255),
+            static_cast<int>(brightness * 255 + select_anim * 15),
+            255
+        );
+        draw_list->AddText(text_pos, text_color, label);
     }
-    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(text_color));
 
-    if (selected) {
-        draw_list->AddCircleFilled(ImVec2(cursor_pos.x + indent, cursor_pos.y + button_height * 0.5f), 3.f, ImColor(theme_color));
-    }
-
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + indent + 10);
-    bool clicked = ImGui::Button(label, ImVec2(ImGui::GetContentRegionAvail().x - (indent + 10), button_height));
-
-    ImGui::PopStyleColor(4);
-    ImGui::PopStyleVar(1);
-
-    return clicked;
+    return pressed;
 }
 
 void ImGui::DrawDetailedSnowflake(ImDrawList* draw_list, ImVec2 center, float size, float rotation, ImVec4 color, int variant)
