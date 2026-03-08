@@ -7,5 +7,6 @@ namespace Lists
 	{
 		extern const std::vector<const char*> m_ccCurrencies;
 		extern const std::vector<const char*> m_ccConsumables;
+		extern const std::vector<int> ProgressRoad;
 	}
 }

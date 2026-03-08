@@ -1,562 +1,509 @@
 #pragma once
 
-#include "Font/Byte.hpp"
-#include "Font/FontAwesome.hpp"
-#include <Obfusheader.hpp>
-#include <string>
-#include <vector>
-#include <array>
-#include <map>
-#include <Windows.h>
-#include <winreg.h>
-#include <iostream>
-#include <algorithm>
-#include <cmath>
-#include <chrono>
-#include <random>
-#include <sstream>
-#include <iomanip>
+#include "NovaWidgets.hpp"
 
-namespace stdvoid {
-    inline std::string username = "User";
-    inline std::string subscriptionType = "Lifetime";
-    inline std::string subscriptionExpiry = "Never";
+void InitializeNovaFonts()
+{
+    if (Fonts::Large) NovaUI::FontBold = Fonts::Large;
 }
 
-enum MainCategory { C_WEBSOCKET, C_SETTINGS };
-enum WebsocketSubCategory { S_BASIC, S_CLAN };
-enum SettingsSubCategory { S_MISC, S_TEST };
-
-inline const char* GetMainCategoryLabel(MainCategory category) {
-    switch (category) {
-    case C_WEBSOCKET:  return "Websocket";
-    case C_SETTINGS: return "Settings";
-    default: return "Menu";
-    }
-}
-
-inline const char* GetWebsocketSubLabel(WebsocketSubCategory sub_index) {
-    switch (sub_index) {
-    case S_CLAN: return "Clan";
-    case S_BASIC:
-    default: return "Basic";
-    }
-}
-
-inline const char* GetSettingsSubLabel(SettingsSubCategory sub_index) {
-    switch (sub_index) {
-    case S_TEST: return "Testing";
-    case S_MISC:
-    default: return "Misc";
-    }
-}
-
-namespace ModernUI {
-    constexpr float WINDOW_WIDTH = 720.f;
-    constexpr float WINDOW_HEIGHT = 480.f;
-    constexpr float WINDOW_ROUNDING = 16.0f;
-    constexpr float SIDEBAR_WIDTH = 140.f;
-    constexpr float HEADER_HEIGHT = 42.f;
-
-    constexpr float ANIM_SPEED_OPEN = 10.0f;
-    constexpr float ANIM_SPEED_INSTANT = 100.0f;
-    constexpr float ANIM_SPEED_CLOSE = ANIM_SPEED_INSTANT;
-    constexpr float ANIM_SPEED_CONTENT = ANIM_SPEED_INSTANT;
-    constexpr float CONTENT_ANIM_START_PROGRESS = 0.0f;
-    constexpr float CONTENT_SPEED_MULTIPLIER = 1.0f;
-    constexpr float CONTENT_OFFSET_Y_MAX = 0.0f;
-
-    constexpr float GRAD_PHASE_FREQ = 1.8f;
-    constexpr float GRAD_LIFT = 0.15f;
-    constexpr float GRAD_VARIANCE = 0.12f;
-    constexpr float GRAD_Y_OFFSET = 0.06f;
-    constexpr float GRAD_ACCENT_LIFT = 0.18f;
-    constexpr float GRAD_BASE_SCALE = 0.70f;
-    constexpr float GRAD_SCALE_VARIANCE = 0.15f;
-    constexpr float GRAD_ACCENT_SCALE = 1.15f;
-
-    constexpr int SNOW_PARTICLE_COUNT = 400;
-
-    inline ImU32 BgPrimary(float alpha = 1.0f) { return IM_COL32(8, 8, 10, static_cast<int>(252 * alpha)); }
-    inline ImU32 BgSecondary(float alpha = 1.0f) { return IM_COL32(4, 4, 5, static_cast<int>(255 * alpha)); }
-    inline ImU32 BgTertiary(float alpha = 1.0f) { return IM_COL32(4, 4, 5, static_cast<int>(255 * alpha)); }
-    inline ImU32 BorderColor(float alpha = 1.0f) { return IM_COL32(45, 45, 55, static_cast<int>(200 * alpha)); }
-    inline ImU32 TextPrimary(float alpha = 1.0f) { return IM_COL32(230, 230, 240, static_cast<int>(255 * alpha)); }
-    inline ImU32 TextSecondary(float alpha = 1.0f) { return IM_COL32(130, 130, 150, static_cast<int>(255 * alpha)); }
-
-    inline float EaseOutCubic(float t) { return 1.0f - std::pow(1.0f - t, 3.0f); }
-    inline float EaseOutQuart(float t) { return 1.0f - std::pow(1.0f - t, 4.0f); }
-}
-
-struct SnowParticle {
-    ImVec2 pos;
-    float size;
-    float speed;
-    float sway_speed;
-    float sway_offset;
-    float depth;
-    float wind_resistance;
-    float rotation;
-    float rotation_speed;
-};
-
-struct AnimState {
-    float content_offset_y = 0.0f;
-    ImVec2 drag_offset = ImVec2(0, 0);
-    bool is_dragging = false;
-};
-
-static std::vector<SnowParticle> snow_particles;
-static float DimAlpha = 0.0f;
-static float TargetDimAlpha = 0.75f;
-static float MenuAlpha = 0.0f;
-static float MenuScale = 0.96f;
-static float OpenProgress = 0.0f;
-static ImVec2 g_WindowPos = ImVec2(-1, -1);
-static AnimState g_AnimState;
-
-template <typename T>
-constexpr T Clamp(const T& value, const T& min, const T& max) {
-    return std::clamp(value, min, max);
-}
-
-inline float SmoothLerp(float a, float b, float t, float dt) {
-    float smoothT = 1.0f - std::exp(-t * dt);
-    return a + smoothT * (b - a);
-}
-
-void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* targetview) const {
+void Backend::DrawImGui(ID3D11DeviceContext* context, ID3D11RenderTargetView* targetview) const
+{
     if (!context || !targetview) return;
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.MouseDrawCursor = Features.OpenMenu;
+
+    if (NovaUI::ThemeImages.empty())
+    {
+        ID3D11Device* device = nullptr;
+        context->GetDevice(&device);
+
+        if (device)
+        {
+            using namespace NovaUI;
+            int uW, uH;
+            LoadTextureFromBytes(device, user, sizeof(user), &NovaUI::UserTexture, &uW, &uH);
+
+            auto AddThemeImg = [&](const char* name, ImVec4 col, unsigned char* data, size_t size) {
+                ThemeImageEntry entry;
+                entry.name = name;
+                entry.color = col;
+                entry.data = data;
+                entry.size = size;
+                entry.texture = nullptr;
+                entry.width = 0;
+                entry.height = 0;
+                LoadTextureFromBytes(device, data, (int)size, &entry.texture, &entry.width, &entry.height);
+                ThemeImages.push_back(entry);
+                };
+
+            AddThemeImg("Blue", ImVec4(0.0f, 0.0f, 1.0f, 1.0f), blue, sizeof(blue));
+            AddThemeImg("Yellow", ImVec4(1.0f, 1.0f, 0.0f, 1.0f), yellow, sizeof(yellow));
+            AddThemeImg("White", ImVec4(1.0f, 1.0f, 1.0f, 1.0f), white, sizeof(white));
+            AddThemeImg("Green", ImVec4(0.0f, 1.0f, 0.0f, 1.0f), green, sizeof(green));
+            AddThemeImg("Purple", ImVec4(0.6f, 0.0f, 0.8f, 1.0f), purple, sizeof(purple));
+            AddThemeImg("Red", ImVec4(1.0f, 0.0f, 0.0f, 1.0f), red, sizeof(red));
+            AddThemeImg("Pink", ImVec4(1.0f, 0.4f, 0.7f, 1.0f), pink, sizeof(pink));
+
+            device->Release();
+        }
+    }
 
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    using namespace ModernUI;
-
-    static MainCategory main_cat = C_WEBSOCKET;
-    static int sub_cat = S_BASIC;
-    static float content_anim = 0.f;
-    static MainCategory prev_main_cat = main_cat;
-    static int prev_sub_cat = sub_cat;
-    static bool ConsoleInitialized = false;
-    static bool DelayComplete = false;
-    static float pulse_time = 0.0f;
-
-    if (!ConsoleInitialized && !DelayComplete) {
-        Sleep(1000);
-        DelayComplete = true;
-    }
-
-    if (!ConsoleInitialized && DelayComplete) {
-        AllocConsole();
-        freopen_s(reinterpret_cast<FILE**>(stdout), "CONOUT$", "w", stdout);
-        freopen_s(reinterpret_cast<FILE**>(stderr), "CONOUT$", "w", stderr);
-        freopen_s(reinterpret_cast<FILE**>(stdin), "CONIN$", "r", stdin);
-        std::cout << "Nova Menu Initialized!\n";
-        ConsoleInitialized = true;
-    }
-
+    using namespace NovaUI;
     const float dt = ImGui::GetIO().DeltaTime;
-    pulse_time += dt;
+    GlowTime += dt;
 
-    float target_open = Features.OpenMenu ? 1.0f : 0.0f;
-    float open_speed = Features.OpenMenu ? ANIM_SPEED_OPEN : ANIM_SPEED_CLOSE;
-    OpenProgress = SmoothLerp(OpenProgress, target_open, open_speed, dt);
+    ImGui::ThemeColor = NovaUI::ThemeColor;
 
-    MenuAlpha = EaseOutCubic(OpenProgress);
-    DimAlpha = TargetDimAlpha * MenuAlpha;
-    MenuScale = 0.97f + 0.03f * MenuAlpha;
+    UpdateClosestTexture();
 
-    if (!Features.OpenMenu && OpenProgress < 0.05f) {
-        content_anim = 0.0f;
-        g_AnimState.content_offset_y = 0.0f;
-    }
+    float targetAlpha = Features.OpenMenu ? 1.0f : 0.0f;
+    float animSpeed = Features.OpenMenu ? 12.0f : 15.0f;
+    MenuAlpha = MenuAlpha + (targetAlpha - MenuAlpha) * ImClamp(animSpeed * dt, 0.0f, 1.0f);
+    if (std::abs(MenuAlpha - targetAlpha) < 0.01f) MenuAlpha = targetAlpha;
 
-    if (OpenProgress > 0.01f && DimAlpha > 0.01f) {
-        auto bg = ImGui::GetBackgroundDrawList();
-        ImVec2 display = ImGui::GetIO().DisplaySize;
-        ImU32 dimCol = IM_COL32(0, 0, 5, static_cast<int>(DimAlpha * 255));
-        bg->AddRectFilled({ 0.f, 0.f }, display, dimCol);
-    }
+    CurrentAlpha = MenuAlpha;
 
-    if (OpenProgress > 0.01f) {
-        ImVec4 tc = ImGui::ThemeColor;
-
-        if (prev_main_cat != main_cat || prev_sub_cat != sub_cat) {
-            content_anim = CONTENT_ANIM_START_PROGRESS;
-            g_AnimState.content_offset_y = CONTENT_OFFSET_Y_MAX;
-            prev_main_cat = main_cat;
-            prev_sub_cat = sub_cat;
-        }
-        const float contentSpeed = ANIM_SPEED_CONTENT * CONTENT_SPEED_MULTIPLIER;
-        content_anim = SmoothLerp(content_anim, 0.f, contentSpeed, dt);
-        float contentProgress = EaseOutQuart(1.0f - Clamp(content_anim, 0.0f, 1.0f));
-        g_AnimState.content_offset_y = CONTENT_OFFSET_Y_MAX * (1.0f - contentProgress) * MenuAlpha;
-
-        ImVec2 display = ImGui::GetIO().DisplaySize;
-        if (g_WindowPos.x < 0 || g_WindowPos.y < 0) {
-            g_WindowPos = ImVec2((display.x - WINDOW_WIDTH) * 0.5f, (display.y - WINDOW_HEIGHT) * 0.5f);
-        }
-
-        ImGui::SetNextWindowSize(ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT));
-        ImGui::SetNextWindowPos(g_WindowPos, ImGuiCond_Always);
-
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(0, 0, 0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, WINDOW_ROUNDING);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-
-        ImGui::Begin("##NovaMenu", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+    if (MenuAlpha > 0.0f)
+    {
+        static bool hasInitialized = false;
+        if (!hasInitialized && MenuAlpha > 0.99f)
         {
-            auto draw = ImGui::GetWindowDrawList();
-            auto pos = ImGui::GetWindowPos();
-            auto size = ImGui::GetWindowSize();
-            auto bg_draw = ImGui::GetBackgroundDrawList();
+            Variables::Miscellaneous::DumpOfferItemTypesInitial = true;
+            Variables::Miscellaneous::m_bAddXP = true;
+            hasInitialized = true;
+        }
+        ImVec2 display = ImGui::GetIO().DisplaySize;
+        ImDrawList* bgDl = ImGui::GetBackgroundDrawList();
+        bgDl->AddRectFilled(ImVec2(0, 0), display, IM_COL32(0, 0, 5, static_cast<int>(CurrentAlpha * 180)));
+
+        float scaledWidth = S(720.0f), scaledHeight = S(540.0f), scaledRounding = S(12.0f);
+        if (WindowPos.x < 0 || WindowPos.y < 0) WindowPos = ImVec2((display.x - scaledWidth) * 0.5f, (display.y - scaledHeight) * 0.5f);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, CurrentAlpha);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, scaledRounding);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, S(ImVec2(6, 6)));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::ColorConvertU32ToFloat4(ColBg()));
+
+        ImGui::SetNextWindowSize(ImVec2(scaledWidth, scaledHeight));
+        ImGui::SetNextWindowPos(WindowPos, ImGuiCond_Always);
+
+        if (ImGui::Begin("##NovaMenu", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+        {
+            ImVec2 wp = ImGui::GetWindowPos(), ws = ImGui::GetWindowSize();
+            ImDrawList* dl = ImGui::GetWindowDrawList();
 
             ImVec2 mousePos = ImGui::GetMousePos();
-            bool inDragArea = (mousePos.x >= pos.x && mousePos.x <= pos.x + SIDEBAR_WIDTH &&
-                mousePos.y >= pos.y && mousePos.y <= pos.y + size.y) ||
-                (mousePos.x >= pos.x + SIDEBAR_WIDTH && mousePos.x <= pos.x + size.x &&
-                    mousePos.y >= pos.y && mousePos.y <= pos.y + HEADER_HEIGHT);
+            float sidebarW = S(115.0f), topBarH = S(52.0f), topBarPad = S(10.0f);
 
-            if (inDragArea && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered()) {
-                g_AnimState.is_dragging = true;
-                g_AnimState.drag_offset = ImVec2(mousePos.x - pos.x, mousePos.y - pos.y);
-            }
-            if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-                g_AnimState.is_dragging = false;
-            }
-            if (g_AnimState.is_dragging) {
-                ImVec2 newPos = ImVec2(mousePos.x - g_AnimState.drag_offset.x, mousePos.y - g_AnimState.drag_offset.y);
-                ImGuiViewport* viewport = ImGui::GetMainViewport();
-                float minX = viewport->Pos.x;
-                float minY = viewport->Pos.y;
-                float maxX = viewport->Pos.x + viewport->Size.x - size.x;
-                float maxY = viewport->Pos.y + viewport->Size.y - size.y;
-                newPos.x = Clamp(newPos.x, minX, maxX);
-                newPos.y = Clamp(newPos.y, minY, maxY);
-                g_WindowPos = newPos;
-            }
+            float pad = S(10.0f);
+            float sidebarX = wp.x + pad;
+            float contentX = sidebarX + sidebarW + pad;
+            float contentW = ws.x - sidebarW - pad * 3;
+            float panelGap = S(10.0f);
+            float panelW = (contentW - panelGap) * 0.5f;
 
-            float gradPhase = 0.5f + 0.5f * std::sinf(pulse_time * GRAD_PHASE_FREQ);
-            ImVec4 gradStart4 = ImVec4(
-                Clamp(tc.x + GRAD_LIFT + GRAD_VARIANCE * gradPhase, 0.0f, 1.0f),
-                Clamp(tc.y + GRAD_Y_OFFSET * gradPhase, 0.0f, 1.0f),
-                Clamp(tc.z + GRAD_ACCENT_LIFT * gradPhase, 0.0f, 1.0f),
-                MenuAlpha);
-            ImVec4 gradEnd4 = ImVec4(
-                Clamp(tc.x * (GRAD_BASE_SCALE + GRAD_SCALE_VARIANCE * gradPhase), 0.0f, 1.0f),
-                Clamp(tc.y * (GRAD_BASE_SCALE + GRAD_SCALE_VARIANCE * gradPhase), 0.0f, 1.0f),
-                Clamp(tc.z * (GRAD_ACCENT_SCALE + GRAD_VARIANCE * gradPhase), 0.0f, 1.0f),
-                MenuAlpha);
-            ImU32 gradientStart = ImGui::ColorConvertFloat4ToU32(gradStart4);
-            ImU32 gradientEnd = ImGui::ColorConvertFloat4ToU32(gradEnd4);
+            bool inDragArea = (mousePos.x >= wp.x && mousePos.x <= wp.x + sidebarW + topBarPad && mousePos.y >= wp.y && mousePos.y <= wp.y + ws.y) ||
+                (mousePos.x >= wp.x + sidebarW && mousePos.x <= wp.x + ws.x && mousePos.y >= wp.y && mousePos.y <= wp.y + topBarPad + topBarH + topBarPad);
 
-            draw->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), BgPrimary(MenuAlpha), WINDOW_ROUNDING, ImDrawFlags_RoundCornersAll);
-
-            float glowPulse = 0.85f + 0.15f * std::sinf(pulse_time * 2.0f);
-            ImU32 glowCol = ImGui::ColorConvertFloat4ToU32(ImVec4(tc.x * glowPulse * 1.3f, tc.y * glowPulse * 1.3f, tc.z * glowPulse * 1.3f, 0.7f * MenuAlpha));
-            bg_draw->AddShadowRect(ImVec2(pos.x + 8, pos.y + 8), ImVec2(pos.x + size.x - 8, pos.y + size.y - 8), glowCol, 80.0f, ImVec2(0, 4), ImDrawFlags_RoundCornersAll, WINDOW_ROUNDING);
-
-            draw->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), BorderColor(MenuAlpha * 0.4f), WINDOW_ROUNDING, ImDrawFlags_RoundCornersAll, 1.0f);
-
-            draw->AddRectFilled(
-                ImVec2(pos.x + WINDOW_ROUNDING * 0.5f, pos.y),
-                ImVec2(pos.x + size.x - WINDOW_ROUNDING * 0.5f, pos.y + 2.0f),
-                BorderColor(MenuAlpha * 0.3f)
-            );
-
-            // Sidebar
-            const float sidebarPad = 8.f;
-            ImGui::SetCursorPos({ 0, 0 });
-            ImGui::BeginChild("##Sidebar", ImVec2(SIDEBAR_WIDTH, size.y), false, ImGuiWindowFlags_NoScrollbar);
+            if (inDragArea && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered() && !ImGui::IsPopupOpen((ImGuiID)0, ImGuiPopupFlags_AnyPopupId))
             {
-                auto nav_draw = ImGui::GetWindowDrawList();
-                auto nav_pos = ImGui::GetCursorScreenPos();
-
-                nav_draw->AddRectFilled(nav_pos, ImVec2(nav_pos.x + SIDEBAR_WIDTH, nav_pos.y + size.y), BgSecondary(MenuAlpha), WINDOW_ROUNDING, ImDrawFlags_RoundCornersLeft);
-
-                ImGui::SetCursorPos({ sidebarPad, sidebarPad + 4 - 11 });
-                {
-                    const char* logo_text = "NOVA";
-                    ImGui::PushFont(Fonts::Large);
-                    ImGui::SetWindowFontScale(1.8f);
-                    ImVec2 logo_size = ImGui::CalcTextSize(logo_text);
-                    float logo_center_x = (SIDEBAR_WIDTH - logo_size.x) * 0.5f;
-                    ImVec2 logo_pos = ImVec2(nav_pos.x + logo_center_x, nav_pos.y + sidebarPad + 4 - 11);
-
-                    ImGui::RenderGradientText(logo_text, logo_pos, gradientStart, gradientEnd);
-                    ImGui::SetWindowFontScale(1.0f);
-                    ImGui::PopFont();
-                }
-
-                ImGui::SetCursorPos({ sidebarPad, 43 });
-                ImVec2 divStart = ImGui::GetCursorScreenPos();
-                nav_draw->AddLine(divStart, ImVec2(divStart.x + SIDEBAR_WIDTH - sidebarPad * 2, divStart.y), BorderColor(MenuAlpha * 0.5f), 1.0f);
-
-                ImGui::SetCursorPos({ sidebarPad, 51 });
-                ImGui::BeginChild("##NavContent", ImVec2(SIDEBAR_WIDTH - sidebarPad * 2, size.y - 100), false, ImGuiWindowFlags_NoScrollbar);
-                {
-                    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.f, 3.f));
-
-                    ImGui::CategoryHeader("WEBSOCKET", ImGui::ThemeColor, MenuAlpha);
-                    if (ImGui::SubCategoryButton(ICON_FA_BOLT " Basic", sub_cat == S_BASIC && main_cat == C_WEBSOCKET, ImGui::ThemeColor)) { main_cat = C_WEBSOCKET; sub_cat = S_BASIC; }
-                    if (ImGui::SubCategoryButton(ICON_FA_USERS " Clan", sub_cat == S_CLAN && main_cat == C_WEBSOCKET, ImGui::ThemeColor)) { main_cat = C_WEBSOCKET; sub_cat = S_CLAN; }
-
-                    ImGui::Dummy(ImVec2(0, 8));
-                    ImGui::CategoryHeader("SETTINGS", ImGui::ThemeColor, MenuAlpha);
-                    if (ImGui::SubCategoryButton(ICON_FA_GEAR " Misc", sub_cat == S_MISC && main_cat == C_SETTINGS, ImGui::ThemeColor)) { main_cat = C_SETTINGS; sub_cat = S_MISC; }
-                    if (ImGui::SubCategoryButton(ICON_FA_FLASK " Testing", sub_cat == S_TEST && main_cat == C_SETTINGS, ImGui::ThemeColor)) { main_cat = C_SETTINGS; sub_cat = S_TEST; }
-
-                    ImGui::PopStyleVar();
-                }
-                ImGui::EndChild();
-
-                ImGui::SetCursorPos({ sidebarPad + 5, size.y - 50 + 8 });
-                {
-                    auto user_pos = ImGui::GetCursorScreenPos();
-                    float avatarRadius = 14.0f;
-                    ImVec2 avatarCenter(user_pos.x + avatarRadius + 2, user_pos.y + avatarRadius + 4);
-
-                    ImU32 avatarBg = ImGui::ColorConvertFloat4ToU32(ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, MenuAlpha));
-                    nav_draw->AddCircleFilled(avatarCenter, avatarRadius, avatarBg, 20);
-                    nav_draw->AddCircle(avatarCenter, avatarRadius, ImGui::ColorConvertFloat4ToU32(ImVec4(tc.x, tc.y, tc.z, 0.4f * MenuAlpha)), 20, 1.0f);
-
-                    ImGui::PushFont(Fonts::FontAwesome);
-                    const char* userIcon = ICON_FA_USER;
-                    ImVec2 iconSize = ImGui::CalcTextSize(userIcon);
-                    nav_draw->AddText(Fonts::FontAwesome, 12.0f, ImVec2(avatarCenter.x - iconSize.x * 0.35f, avatarCenter.y - iconSize.y * 0.35f), TextPrimary(MenuAlpha), userIcon);
-                    ImGui::PopFont();
-
-                    ImVec2 textPos(user_pos.x + avatarRadius * 2 + 8, user_pos.y + 2);
-                    nav_draw->AddText(textPos, TextPrimary(MenuAlpha), stdvoid::username.c_str());
-                    nav_draw->AddText(ImVec2(textPos.x, textPos.y + 14), TextSecondary(MenuAlpha), stdvoid::subscriptionType.c_str());
-                }
+                IsDragging = true;
+                DragOffset = ImVec2(mousePos.x - wp.x, mousePos.y - wp.y);
             }
-            ImGui::EndChild();
-
-            // Content Area
-            ImGui::SetCursorPos(ImVec2(SIDEBAR_WIDTH, 0));
-            ImGui::BeginChild("##Content", ImVec2(size.x - SIDEBAR_WIDTH, size.y), false, ImGuiWindowFlags_NoBackground);
+            if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) IsDragging = false;
+            if (IsDragging)
             {
-                const float contentPad = 10.f;
-                auto content_draw = ImGui::GetWindowDrawList();
-                auto content_pos = ImGui::GetCursorScreenPos();
-                float contentWidth = ImGui::GetContentRegionAvail().x;
-
-                content_draw->AddRectFilled(content_pos, ImVec2(content_pos.x + contentWidth, content_pos.y + HEADER_HEIGHT), BgTertiary(MenuAlpha), WINDOW_ROUNDING, ImDrawFlags_RoundCornersTopRight);
-
-                {
-                    const float px = contentPad;
-
-                    std::string mainLabel = GetMainCategoryLabel(main_cat);
-                    std::string subLabel = (main_cat == C_WEBSOCKET) ? GetWebsocketSubLabel(static_cast<WebsocketSubCategory>(sub_cat)) : GetSettingsSubLabel(static_cast<SettingsSubCategory>(sub_cat));
-                    std::string sectionLine = mainLabel + " / " + subLabel;
-
-                    ImGui::PushFont(Fonts::Large);
-
-                    ImVec2 titleSize = ImGui::CalcTextSize(sectionLine.c_str());
-                    ImVec2 titlePos(content_pos.x + px, content_pos.y + (HEADER_HEIGHT - titleSize.y) * 0.5f - 1);
-
-                    ImGui::RenderGradientText(sectionLine.c_str(), titlePos, gradientStart, gradientEnd);
-
-                    ImGui::PopFont();
-                }
-
-                const float contentStartY = HEADER_HEIGHT + contentPad - g_AnimState.content_offset_y;
-                ImGui::SetCursorPos(ImVec2(contentPad, contentStartY));
-
-                const float availWidth = contentWidth - contentPad * 2;
-                const float childGap = 8.f;
-                const float colWidth = (availWidth - childGap) / 2.f;
-
-                float contentVisibility = contentProgress * MenuAlpha;
-                ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * contentVisibility);
-
-                switch (main_cat)
-                {
-                case C_WEBSOCKET:
-                {
-                    switch ((WebsocketSubCategory)sub_cat)
-                    {
-                    case S_BASIC:
-                    {
-                        ImGui::BeginGroup();
-                        {
-                            if (ImGui::BeginCustomChild("Currency", ImVec2(colWidth, 160)))
-                            {
-                                float w = ImGui::GetContentRegionAvail().x;
-                                float halfW = (w - ImGui::GetStyle().ItemSpacing.x) / 2.f;
-
-                                ImGui::Combo(OBF("Currencies"), &Variables::Websocket::m_iCurrencyType,
-                                    Lists::Websocket::m_ccCurrencies.data(), Lists::Websocket::m_ccCurrencies.size(), 4);
-                                ImGui::Text(OBF("Amount"));
-                                ImGui::CustomInputInt(OBF("##currencyAmt"), "", &Variables::Websocket::m_iCurrencyAmount, 0, 0, ImGuiInputFlags_None, w);
-                                if (ImGui::CustomButton(OBF("##addCur"), OBF("Add"), halfW, 26)) { Variables::Websocket::m_bAddCurrency = true; }
-                                ImGui::SameLine();
-                                if (ImGui::CustomButton(OBF("##spendCur"), OBF("Spend"), halfW, 26)) { Variables::Websocket::m_bSpendCurrency = true; }
-                            }
-                            ImGui::EndCustomChild();
-                        }
-                        ImGui::EndGroup();
-
-                        ImGui::SameLine(0, childGap);
-
-                        ImGui::BeginGroup();
-                        {
-                            if (ImGui::BeginCustomChild("Consumables", ImVec2(colWidth, 160)))
-                            {
-                                float w = ImGui::GetContentRegionAvail().x;
-
-                                ImGui::Combo(OBF("Consumable"), &Variables::Websocket::m_iConsumableType,
-                                    Lists::Websocket::m_ccConsumables.data(), Lists::Websocket::m_ccConsumables.size(), 4);
-                                ImGui::Text(OBF("Amount"));
-                                ImGui::CustomInputInt(OBF("##consumableAmt"), "", &Variables::Websocket::m_iConsumableAmount, 0, 0, ImGuiInputFlags_None, w);
-                                if (ImGui::CustomButton(OBF("##addConsumable"), OBF("Add Consumable"), w, 26)) { Variables::Websocket::m_bAddConsumable = true; }
-                            }
-                            ImGui::EndCustomChild();
-                        }
-                        ImGui::EndGroup();
-                    }
-                    break;
-                    case S_CLAN:
-                    {
-                        ImGui::BeginGroup();
-                        {
-                            if (ImGui::BeginCustomChild("Clan Features", ImVec2(availWidth, 120)))
-                            {
-                                ImGui::TextWrapped("Clan features coming soon...");
-                            }
-                            ImGui::EndCustomChild();
-                        }
-                        ImGui::EndGroup();
-                    }
-                    break;
-                    }
-                }
-                break;
-                case C_SETTINGS:
-                {
-                    switch ((SettingsSubCategory)sub_cat)
-                    {
-                    case S_MISC:
-                    {
-                        ImGui::BeginGroup();
-                        {
-                            if (ImGui::BeginCustomChild("Miscellaneous", ImVec2(availWidth, 120)))
-                            {
-                                ImGui::TextWrapped("Miscellaneous settings coming soon...");
-                            }
-                            ImGui::EndCustomChild();
-                        }
-                        ImGui::EndGroup();
-                    }
-                    break;
-                    case S_TEST:
-                    {
-                        ImGui::BeginGroup();
-                        {
-                            if (ImGui::BeginCustomChild("Test Features", ImVec2(availWidth, 120)))
-                            {
-                                ImGui::TextWrapped("Testing features coming soon...");
-                            }
-                            ImGui::EndCustomChild();
-                        }
-                        ImGui::EndGroup();
-                    }
-                    break;
-                    }
-                }
-                break;
-                }
-
-                ImGui::PopStyleVar();
+                ImVec2 newPos = ImVec2(mousePos.x - DragOffset.x, mousePos.y - DragOffset.y);
+                ImGuiViewport* vp = ImGui::GetMainViewport();
+                WindowPos = ImVec2(ImClamp(newPos.x, vp->Pos.x - ws.x + S(50.0f), vp->Pos.x + vp->Size.x - S(50.0f)), ImClamp(newPos.y, vp->Pos.y, vp->Pos.y + vp->Size.y - S(50.0f)));
             }
-            ImGui::EndChild();
-        }
-        ImGui::End();
-        ImGui::PopStyleVar(3);
-        ImGui::PopStyleColor();
-    }
 
-    if (OpenProgress > 0.01f) {
-        auto bg_draw_list = ImGui::GetBackgroundDrawList();
-        const float time = ImGui::GetTime();
-        static bool initialized = false;
-        static float wind_time = 0.0f;
+            float glowPulse = 0.85f + 0.15f * sinf(GlowTime * 2.0f);
+            bgDl->AddShadowRect(ImVec2(wp.x + S(6), wp.y + S(6)), ImVec2(wp.x + ws.x - S(6), wp.y + ws.y - S(6)),
+                ImGui::ColorConvertFloat4ToU32(ImVec4(ThemeColor.x * glowPulse * 1.3f, ThemeColor.y * glowPulse * 1.3f, ThemeColor.z * glowPulse * 1.3f, 0.6f * CurrentAlpha)),
+                S(70.0f), ImVec2(0, S(4.0f)), ImDrawFlags_RoundCornersAll, scaledRounding);
 
-        static std::mt19937 rng{ std::random_device{}() };
-        static std::uniform_real_distribution<float> dist01{ 0.0f, 1.0f };
+            ImVec2 topBarY(wp.y + topBarPad, wp.y + topBarPad + topBarH);
 
-        const auto screenW = ImGui::GetIO().DisplaySize.x;
-        const auto screenH = ImGui::GetIO().DisplaySize.y;
+            ImVec2 topLeftMin(sidebarX, topBarY.x);
+            ImVec2 topLeftMax(sidebarX + sidebarW, topBarY.y);
+            dl->AddRectFilled(topLeftMin, topLeftMax, ColTopBar(), S(10.0f));
 
-        if (!initialized || snow_particles.empty()) {
-            snow_particles.clear();
-            snow_particles.reserve(SNOW_PARTICLE_COUNT);
-            for (int i = 0; i < SNOW_PARTICLE_COUNT; ++i) {
-                SnowParticle flake;
-                flake.pos = ImVec2(dist01(rng) * screenW, dist01(rng) * screenH);
-                flake.depth = 0.2f + dist01(rng) * 0.8f;
-                const float size_roll = dist01(rng);
-                flake.size = (size_roll < 0.6f) ? 1.2f + dist01(rng) * 1.3f
-                    : (size_roll < 0.85f) ? 2.8f + dist01(rng) * 1.2f
-                    : 4.2f + dist01(rng) * 1.5f;
-                flake.speed = 35.0f + flake.size * 10.0f + dist01(rng) * 25.0f;
-                flake.sway_speed = 0.4f + dist01(rng) * 1.0f;
-                flake.sway_offset = dist01(rng) * 6.283185f;
-                flake.wind_resistance = 0.3f + dist01(rng) * 0.7f;
-                flake.rotation = dist01(rng) * 6.283185f;
-                flake.rotation_speed = (dist01(rng) - 0.5f) * 2.0f;
-                snow_particles.push_back(flake);
+            ImVec2 topMidMin(contentX, topBarY.x);
+            ImVec2 topMidMax(contentX + panelW, topBarY.y);
+            dl->AddRectFilled(topMidMin, topMidMax, ColTopBar(), S(10.0f));
+
+            {
+                float avatarSize = S(34.0f);
+                float padLeft = S(14.0f);
+                float centerY = topMidMin.y + (topBarH - avatarSize) * 0.5f;
+
+                ImVec2 avMin(topMidMin.x + padLeft, centerY);
+                ImVec2 avMax(avMin.x + avatarSize, avMin.y + avatarSize);
+                ImVec2 avCenter = ImVec2(avMin.x + avatarSize * 0.5f, avMin.y + avatarSize * 0.5f);
+
+                if (NovaUI::UserTexture) {
+                    dl->AddImageRounded(NovaUI::UserTexture, avMin, avMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, (int)(255 * CurrentAlpha)), avatarSize * 0.5f);
+                }
+                else {
+                    dl->AddCircleFilled(avCenter, avatarSize * 0.5f, ColTheme());
+                    dl->AddText(GetFontBold(), FontSize(), ImVec2(avCenter.x - S(5), avCenter.y - S(8)), IM_COL32(255, 255, 255, 255), "L");
+                }
+                dl->AddCircle(avCenter, (avatarSize * 0.5f) + S(1.0f), ColTheme(), 0, S(1.5f));
+
+                float textX = avMax.x + S(10.0f);
+                const char* uName = "Leminare";
+                const char* uExpiry = "Expiry 6/06/2026";
+                float fs = FontSize();
+
+                ImVec2 nameSz = GetFontBold()->CalcTextSizeA(fs, FLT_MAX, 0.0f, uName);
+                float textTotalH = nameSz.y + S(14.0f);
+                float textStartY = topMidMin.y + (topBarH - textTotalH) * 0.5f;
+
+                dl->AddText(GetFontBold(), fs, ImVec2(textX, textStartY + S(1)), ColText(), uName);
+                dl->AddText(GetFont(), fs * 0.85f, ImVec2(textX, textStartY + nameSz.y + S(2)), ColTextDim(), uExpiry);
             }
-            initialized = true;
+
+            ImVec2 topRightMin(contentX + panelW + panelGap, topBarY.x);
+            ImVec2 topRightMax(contentX + panelW + panelGap + panelW, topBarY.y);
+            dl->AddRectFilled(topRightMin, topRightMax, ColTopBar(), S(10.0f));
+
+            {
+                float btnSize = S(32.0f);
+                float spacing = S(6.0f);
+                float rightMargin = S(14.0f);
+                float currentX = topRightMax.x - rightMargin;
+                float fs = FontSize();
+
+                auto DrawBtn = [&](const char* icon, bool active, auto onClick) {
+                    currentX -= btnSize;
+                    ImVec2 btnMin(currentX, topRightMin.y + (topBarH - btnSize) * 0.5f);
+                    ImVec2 btnMax(btnMin.x + btnSize, btnMin.y + btnSize);
+
+                    bool hovered = ImGui::IsMouseHoveringRect(btnMin, btnMax);
+
+                    if (hovered || active)
+                        dl->AddRectFilled(btnMin, btnMax, ImGui::GetColorU32(ImVec4(1.f, 1.f, 1.f, 0.08f)), S(8.0f));
+
+                    ImVec2 tSz = ImGui::CalcTextSize(icon);
+                    dl->AddText(ImVec2(btnMin.x + (btnSize - tSz.x) * 0.5f, btnMin.y + (btnSize - tSz.y) * 0.5f),
+                        (hovered || active) ? ColTheme() : ColText(), icon);
+
+                    if (hovered && ImGui::IsMouseClicked(0)) onClick();
+                    currentX -= spacing;
+                    };
+
+                DrawBtn(ICON_FA_GEAR, ActiveTab == 6, [&]() { ActiveTab = 6; });
+                DrawBtn(ICON_FA_COMMENT_DOTS, false, [&]() { ShellExecuteA(NULL, "open", "https://discord.gg/pgcentral", NULL, NULL, SW_SHOWNORMAL); });
+                DrawBtn(ICON_FA_ROTATE_RIGHT, false, [&]() { Variables::Websocket::m_bReloadSocket = true; });
+
+                currentX -= S(4.0f);
+                float sepH = S(20.0f);
+                dl->AddLine(ImVec2(currentX, topRightMin.y + (topBarH - sepH) * 0.5f),
+                    ImVec2(currentX, topRightMin.y + (topBarH + sepH) * 0.5f), ColSeparator(), S(1.0f));
+                currentX -= S(12.0f);
+
+                char fpsBuf[32];
+                snprintf(fpsBuf, 32, "%d FPS", (int)ImGui::GetIO().Framerate);
+                ImVec2 fpsSz = GetFont()->CalcTextSizeA(fs, FLT_MAX, 0.0f, fpsBuf);
+                currentX -= fpsSz.x;
+                dl->AddText(GetFont(), fs, ImVec2(currentX, topRightMin.y + (topBarH - fpsSz.y) * 0.5f), ColTextDim(), fpsBuf);
+
+                currentX -= S(12.0f);
+                dl->AddLine(ImVec2(currentX, topRightMin.y + (topBarH - sepH) * 0.5f),
+                    ImVec2(currentX, topRightMin.y + (topBarH + sepH) * 0.5f), ColSeparator(), S(1.0f));
+                currentX -= S(12.0f);
+
+                const char* verStr = "V1.2b";
+                ImVec2 verSz = GetFont()->CalcTextSizeA(fs, FLT_MAX, 0.0f, verStr);
+                currentX -= verSz.x;
+                dl->AddText(GetFont(), fs, ImVec2(currentX, topRightMin.y + (topBarH - verSz.y) * 0.5f), ColTextDim(), verStr);
+                    }
+
+                float logoScale = 1.8f;
+                float logoSize = FontSize() * logoScale;
+                float logoY = topLeftMin.y + (topBarH - logoSize) * 0.5f;
+
+                dl->AddText(GetFontBold(), logoSize, ImVec2(topLeftMin.x + S(16), logoY + S(2)), IM_COL32(0, 0, 0, 100), "NOVA");
+                dl->AddText(GetFontBold(), logoSize, ImVec2(topLeftMin.x + S(14), logoY), ColLogo(), "NOVA");
+
+                float novaW = ImGui::CalcTextSize("NOVA").x * Scale() * logoScale;
+                float pulseFactor = (sinf(GlowTime * 3.0f) + 1.0f) * 0.5f;
+                ImVec4 baseCol = ThemeColor;
+                ImVec4 targetCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+                ImVec4 finalPulseCol = ImLerp(baseCol, targetCol, pulseFactor * 0.4f);
+                finalPulseCol.w = 1.0f;
+                dl->AddText(GetFontBold(), logoSize, ImVec2(topLeftMin.x + S(18) + novaW, logoY), ImGui::GetColorU32(finalPulseCol), "+");
+
+                float mainAreaY = wp.y + topBarPad + topBarH + topBarPad;
+                float sidebarY = mainAreaY;
+                float sidebarH = ws.y - mainAreaY - pad + wp.y;
+                float contentY = sidebarY;
+                float contentH = sidebarH;
+
+                dl->AddRectFilled(ImVec2(sidebarX, sidebarY), ImVec2(sidebarX + sidebarW, sidebarY + sidebarH), ColSidebar(), S(8.0f));
+                for (int i = 0; i < TabCount; i++)
+                {
+                    ImGui::SetCursorScreenPos(ImVec2(sidebarX + S(3), sidebarY + S(8) + i * S(36)));
+                    ImGui::PushID(i);
+                    CategoryButton(i, TabNames[i], ActiveTab == i, sidebarW - S(6), S(32), i == TabCount - 1);
+                    ImGui::PopID();
+                }
+
+                if (CurrentSidebarTexture && CurrentSidebarWidth > 0 && CurrentSidebarHeight > 0)
+                {
+                    float padding = 8.0f;
+                    float availableWidth = sidebarW - padding;
+                    float aspectRatio = (float)CurrentSidebarHeight / (float)CurrentSidebarWidth;
+                    float drawHeight = availableWidth * aspectRatio;
+
+                    ImVec2 imgMin(sidebarX + (sidebarW - availableWidth) * 0.5f, (sidebarY + sidebarH) - drawHeight - S(4.0f));
+                    ImVec2 imgMax(imgMin.x + availableWidth, imgMin.y + drawHeight);
+
+                    dl->AddImage(CurrentSidebarTexture, imgMin, imgMax, ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, (int)(255 * CurrentAlpha)));
+                }
+
+                float panelH = (contentH - panelGap) * 0.5f;
+                ImVec2 p1(contentX, contentY), p2(contentX + panelW + panelGap, contentY), p3(contentX, contentY + panelH + panelGap), p4(contentX + panelW + panelGap, contentY + panelH + panelGap);
+
+                switch (ActiveTab)
+                {
+                case 0:
+                    BeginChildPanel("##weapon_adder", ICON_FA_PLUS, "WEAPON ADDER", p1, ImVec2(panelW, panelH));
+                    {
+                        SliderInt("Weapon Level", &Variables::Websocket::m_iWeaponLevel, 1, 65);
+                        ImGui::Spacing();
+                        float halfW = (CurrentPanelContentWidth - S(6.0f)) * 0.5f;
+
+                        if (Button("Add All Weapons", halfW, S(24.0f))) Variables::Websocket::m_bAddAllWeapons = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Add All Primary", halfW, S(24.0f))) Variables::Websocket::m_bAddAllPrimary = true;
+
+                        if (Button("Add All Backup", halfW, S(24.0f))) Variables::Websocket::m_bAddAllBackup = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Add All Melee", halfW, S(24.0f))) Variables::Websocket::m_bAddAllMelee = true;
+
+                        if (Button("Add All Special", halfW, S(24.0f))) Variables::Websocket::m_bAddAllSpecial = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Add All Sniper", halfW, S(24.0f))) Variables::Websocket::m_bAddAllSniper = true;
+
+                        if (Button("Add All Heavy", halfW, S(24.0f))) Variables::Websocket::m_bAddAllHeavy = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Craft Guns", halfW, S(24.0f))) Variables::Websocket::m_bAddAllCraftable = true;
+
+                        if (Button("Weapon Parts", halfW, S(24.0f))) Variables::Websocket::m_bAddAllWeaponParts = true;
+
+                    }
+                    EndChildPanel();
+
+                    BeginChildPanel("##weapon_remover", ICON_FA_MINUS, "WEAPON REMOVER", p2, ImVec2(panelW, panelH));
+                    {
+                        float halfW = (CurrentPanelContentWidth - S(6.0f)) * 0.5f;
+                       
+                        if (Button("All Primary", halfW, S(24.0f))) Variables::Websocket::m_bRemoveAllPrimary = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("All Backup", halfW, S(24.0f))) Variables::Websocket::m_bRemoveAllBackup = true;
+
+                        if (Button("All Melee", halfW, S(24.0f))) Variables::Websocket::m_bRemoveAllMelee = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("All Special", halfW, S(24.0f))) Variables::Websocket::m_bRemoveAllSpecial = true;
+
+                        if (Button("All Sniper", halfW, S(24.0f))) Variables::Websocket::m_bRemoveAllSniper = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("All Heavy", halfW, S(24.0f))) Variables::Websocket::m_bRemoveAllHeavy = true;
+
+                        if (Button("Remove All")) Variables::Websocket::m_bRemoveAllWeapons = true;
+
+
+                    }
+                    EndChildPanel();
+
+                    BeginChildPanel("##misc_tab0", ICON_FA_ELLIPSIS, "MISC", p3, ImVec2(panelW, panelH));
+                    {
+                        ImGui::Spacing();
+                        if (Button("Complete Tutorial")) Variables::Websocket::m_bCompleteTutorial = true;
+                        InputText("Friend ID", Variables::Websocket::m_cFriendID, 256);
+                        ImGui::Spacing();
+                        if (Button("Send Friend Request")) Variables::Websocket::m_bSendFriendRequest = true;
+                        ImGui::Spacing();
+                        InputText("Clan Message", Variables::Websocket::m_cClanMessage, 512);
+                        ImGui::Spacing();
+                        if (Button("Send Clan Message")) Variables::Websocket::m_bSendClanMessage = true;
+                        
+                    }
+                    EndChildPanel();
+
+                    BeginChildPanel("##adder_all", ICON_FA_CROWN, "ACCOUNT MAXING", p4, ImVec2(panelW, panelH));
+                    {
+                        float halfW = (CurrentPanelContentWidth - S(6.0f)) * 0.5f;
+                        if (Button("Add Weapons", halfW, S(24.0f))) Variables::Websocket::m_bAddAllWeapons = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Add Armors", halfW, S(24.0f))) Variables::Websocket::m_bAddAllArmor = true;
+                        if (Button("Add Wears", halfW, S(24.0f))) Variables::Websocket::m_bAddAllWear = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Add Avatars", halfW, S(24.0f))) Variables::Websocket::m_bAddAllAvatars = true;
+                        if (Button("Add Trails", halfW, S(24.0f))) Variables::Websocket::m_bAddAllTrails = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Add Gadgets", halfW, S(24.0f))) Variables::Websocket::m_bAddAllGadgets = true;
+                        if (Button("Add Vehicles", halfW, S(24.0f))) Variables::Websocket::m_bAddAllVehicles = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Add Pets", halfW, S(24.0f))) Variables::Websocket::m_bAddAllPets = true;
+                        if (Button("Add Modules", halfW, S(24.0f))) Variables::Websocket::m_bAddAllModules = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Add Graffiti", halfW, S(24.0f))) Variables::Websocket::m_bAddAllGraffiti = true;
+                        if (Button("Weapon Skins", halfW, S(24.0f))) Variables::Websocket::m_bAddAllWeaponSkins = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Gun Upgrades", halfW, S(24.0f))) Variables::Websocket::m_bAddAllFreeUpgrades = true;
+                    }
+                    EndChildPanel();
+                    break;
+                case 1:
+                    BeginChildPanel("##claninfo", "@", "CLAN INFO", p1, ImVec2(panelW, panelH));
+                    Text("Clan features coming soon...");
+                    EndChildPanel();
+                    BeginChildPanel("##clanactions", "#", "CLAN ACTIONS", p2, ImVec2(panelW, panelH));
+                    Text("More clan features...");
+                    EndChildPanel();
+                    break;
+                case 2:
+                    BeginChildPanel("##gameplaymods", ICON_FA_GAMEPAD, "GAMEPLAY MODS", p1, ImVec2(panelW, panelH));
+                    {
+                        Checkbox("Shoot Lasers", &Variables::Gameplay::m_bRailgun);
+                        Checkbox("Custom Chat", &Variables::Miscellaneous::m_bChatSpam);
+                        Checkbox("Full Screen SPAM", &Variables::Miscellaneous::m_bChatFullScreen);
+                        Checkbox("Shoot Rockets", &Variables::Gameplay::m_bBazooka);
+                        Checkbox("Shoot Shotgun", &Variables::Gameplay::m_bShotgun);
+                        Checkbox("Shoot Dash", &Variables::Gameplay::m_bDash);
+                        Checkbox("Shoot Harpoon", &Variables::Gameplay::m_bHarpoon);
+                        Checkbox("Exploding Bullets", &Variables::Gameplay::m_bExplodingBullets);
+                        Checkbox("Quick Scope", &Variables::Gameplay::m_bQuickScope);
+                        Checkbox("Stacking Blindness", &Variables::Gameplay::m_bBlindness);
+                        Checkbox("Firerate", &Variables::Gameplay::m_bFastFireRate);
+                        Checkbox("Ammo", &Variables::Gameplay::m_bInfiniteAmmo);
+                    }
+                    EndChildPanel();
+                    break;
+                case 3:
+                    BeginChildPanel("##gifting", ICON_FA_GIFT, "GIFTING", p1, ImVec2(panelW, panelH));
+                    Text("Gifting features coming soon...");
+                    EndChildPanel();
+                    break;
+                case 4:
+                    BeginChildPanel("##cloning", ICON_FA_CLONE, "PLAYER CLONING", p1, ImVec2(panelW, panelH));
+                    {
+                        static char idbuffer[16] = "";
+                        InputText("Player ID", idbuffer, sizeof(idbuffer));
+                        Variables::Miscellaneous::m_sOtherPlayerID = idbuffer;
+                        ImGui::Spacing();
+                        float halfW = (CurrentPanelContentWidth - S(6.0f)) * 0.5f;
+                        if (Button("Clone Name", halfW, S(26.0f))) Variables::Websocket::m_bCloneName = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Clone Skins", halfW, S(26.0f))) Variables::Websocket::m_bCloneSkins = true;
+                        if (Button("Clone Cape", halfW, S(26.0f))) Variables::Websocket::m_bCloneCape = true;
+                        ImGui::SameLine(0, S(6.0f));
+                        if (Button("Check Slots", halfW, S(26.0f))) Variables::Miscellaneous::m_bCheckAllOtherPlayerSlots = true;
+                    }
+                    EndChildPanel();
+                    BeginChildPanel("##myslots", ICON_FA_PERSON_ARROW_DOWN_TO_LINE, "MY SLOTS", p2, ImVec2(panelW, panelH));
+                    {
+                        if (Button("Check My Slots")) Variables::Miscellaneous::m_bCheckAllMySlots = true;
+                    }
+                    EndChildPanel();
+                    break;
+                case 5:
+                    BeginChildPanel("##testing", ICON_FA_PEN, "WEBSOCKET CONSOLE", p1, ImVec2(panelW, panelH));
+                    {
+                        InputText("Event Name", Variables::Websocket::m_cCustomEventName, 256);
+                        ImGui::Spacing();
+                        InputText("Command", Variables::Websocket::m_cCustomJson, 999999);
+                        ImGui::Spacing();
+                        if (Button("Send Request")) Variables::Websocket::m_bSendCustomCommand = true;
+                    }
+                    EndChildPanel();
+                    BeginChildPanel("##dumps", ICON_FA_CIRCLE_DOWN, "DUMPS", p2, ImVec2(panelW, panelH));
+                    {
+                        if (Button("Dump Offer Item Types")) Variables::Miscellaneous::DumpOfferItemTypes = true;
+                        if (Button("Dump Game")) Variables::Miscellaneous::m_bDumpGame = true;
+                        if (Button("Dump Event Names")) Variables::Miscellaneous::m_bDumpEventNames = true;
+                        if (Button("HD SKIN TEST")) Variables::Miscellaneous::m_bSkinTest = true;
+                        if (Button("Token")) Variables::Miscellaneous::m_bOutputToken = true;
+                        if (Button("Auth Info")) Variables::Miscellaneous::m_bOutputAuthInfo = true;
+                        if (Button("XP")) Variables::Miscellaneous::m_bAddXP = true;
+                        if (Button("Achievements")) UnlockAllAchievements();
+
+                        Text("Set Player Level");
+                        SliderInt("Level", &Variables::Websocket::m_iSetLevel, 1, 65);
+                        if (Button("Set Level")) Variables::Websocket::m_bSetLevel = true;
+                    }
+                    EndChildPanel();
+                    BeginChildPanel("##playerinfo", ICON_FA_CIRCLE_INFO, "PLAYER INFO", p3, ImVec2(panelW, panelH));
+                    {
+                        Text("Name: %s", Variables::Miscellaneous::m_sPlayerUsername.c_str());
+                        Text("Level: %d", Variables::Miscellaneous::m_iPlayerLevel);
+                        Text("Version: %s", Variables::Miscellaneous::m_sGameVersion.c_str());
+                        Text("ID: %s", Variables::Miscellaneous::m_sPlayerID.c_str());
+                    }
+                    EndChildPanel();
+                    BeginChildPanel("##appearance", ICON_FA_PAINTBRUSH, "APPEARANCE", p4, ImVec2(panelW, panelH));
+                    {
+                        ColorEdit("Theme Color", &ThemeColor);
+                        ImGui::Spacing();
+                        Combo("Theme", &CurrentThemeIndex, ThemeNames, 45);
+                        ImGui::Spacing();
+                        ImGui::GetWindowDrawList()->AddText(GetFont(), FontSize(), ImGui::GetCursorScreenPos(), ColText(), "Menu Scale");
+                        ImGui::Dummy(ImVec2(0, FontSize()));
+                        Combo("Scale", &DPIIndex, DPILabels, 6);
+                    }
+                    EndChildPanel();
+                    break;
+                case 6:
+                    BeginChildPanel("##about", ICON_FA_CIRCLE_QUESTION, "ABOUT", p1, ImVec2(panelW, panelH));
+                    {
+                        Text("Nova Menu v2.0 - Remastered");
+                        ImGui::Spacing();
+                    }
+                    EndChildPanel();
+                    BeginChildPanel("##userinfo", ICON_FA_INFO, "USER INFO", p2, ImVec2(panelW, panelH));
+                    {
+                        Text("Username: Leminare");
+                        Text("Subscription: Lifetime");
+                        Text("Expiry: 6/06/2026");
+                    }
+                    EndChildPanel();
+                    BeginChildPanel("##credits", ICON_FA_BOOK, "CREDITS", p3, ImVec2(panelW, panelH));
+                    {
+                        Text("Main Dev: Leminare");
+                        Text("Femboy Support: Mazzy");
+                        Text("Dari, SotoSapi(Proplamatic)");
+                        Text("Yeet(I Pasted some Asteroid Stuff)");
+                        Text("Dumper: Sxitxma");
+                        Text("Hes black: Meth");
+                        TextDim("Special thanks to contributors!");
+                    }
+                    EndChildPanel();
+                    break;
+                }
+                ImGui::End();
+            }
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar(4);
         }
 
-        wind_time += dt;
-        const float base_wind = 20.0f;
-        const float gust_1 = std::sinf(wind_time * 0.3f) * 15.0f;
-        const float gust_2 = std::sinf(wind_time * 0.7f) * 10.0f;
-        float total_wind = base_wind + gust_1 + gust_2;
-        const float mega_gust = std::sinf(wind_time * 0.15f) > 0.7f ? std::sinf(wind_time * 2.0f) * 12.0f : 0.0f;
-        total_wind += mega_gust;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.f);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(18.f / 255.f, 18.f / 255.f, 22.f / 255.f, 0.94f));
+        ImGui::RenderNotifications();
+        ImGui::PopStyleVar(1);
+        ImGui::PopStyleColor(1);
 
-        for (auto& flake : snow_particles) {
-            flake.pos.y += flake.speed * dt;
-            flake.pos.x += total_wind * flake.wind_resistance * flake.depth * dt;
-            flake.pos.x += std::sinf(time * flake.sway_speed + flake.sway_offset) * 10.0f * dt;
-            flake.rotation += flake.rotation_speed * dt;
-
-            if (mega_gust > 5.0f)
-                flake.pos.y -= mega_gust * 0.25f * flake.wind_resistance * dt;
-
-            if (flake.pos.y > screenH + 10) { flake.pos.y = -10; flake.pos.x = dist01(rng) * screenW; }
-            if (flake.pos.x > screenW + 10) { flake.pos.x = -10; flake.pos.y = dist01(rng) * screenH; }
-            if (flake.pos.x < -10) { flake.pos.x = screenW + 10; flake.pos.y = dist01(rng) * screenH; }
-
-            const float flicker = 0.85f + std::sinf(time * 2.5f + flake.sway_offset) * 0.15f;
-            const float opacity = (0.5f + flake.depth * 0.4f) * flicker;
-            const ImU32 snow_color = IM_COL32(255, 255, 255, static_cast<int>(opacity * 255 * MenuAlpha));
-
-            if (flake.size >= 4.2f)
-                ImGui::DrawDetailedSnowflake(bg_draw_list, flake.pos, flake.size, flake.rotation, ImGui::ColorConvertU32ToFloat4(snow_color), 2);
-            else if (flake.size >= 2.8f)
-                ImGui::DrawDetailedSnowflake(bg_draw_list, flake.pos, flake.size, flake.rotation, ImGui::ColorConvertU32ToFloat4(snow_color), 1);
-            else
-                bg_draw_list->AddCircleFilled(flake.pos, flake.size, snow_color, 6);
-        }
+        ImGui::EndFrame();
+        ImGui::Render();
+        context->OMSetRenderTargets(1, &targetview, nullptr);
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
     }
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.f);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(18.f / 255.f, 18.f / 255.f, 22.f / 255.f, 0.94f));
-    ImGui::RenderNotifications();
-    ImGui::PopStyleVar(1);
-    ImGui::PopStyleColor(1);
-
-    ImGui::EndFrame();
-    ImGui::Render();
-
-    context->OMSetRenderTargets(1, &targetview, nullptr);
-    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-}

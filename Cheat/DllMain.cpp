@@ -1,4 +1,4 @@
-#include "Backend/Backend.hpp"
+﻿#include "Backend/Backend.hpp"
 #include "Utils/Utils.hpp"
 #include "Cheat.hpp"
 
@@ -15,7 +15,7 @@ static void PrintLogo()
 	std::cout << "| \\__/\\ | (_| | | | | | |_| | |_| | \\__ \\" << std::endl;
 	std::cout << " \\____/_|\\__,_|_| |_|  \\___/ \\__|_|_|___/" << std::endl;
 	std::cout << std::endl;
-
+	//todo make this say nova but im too lazy to rn
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY);
 }
 
@@ -26,7 +26,7 @@ static DWORD WINAPI MainThread(LPVOID param)
 	AllocConsole();
 	FILE* fp;
 	freopen_s(&fp, "CONOUT$", "w", stdout);
-	SetConsoleTitleA(OBF("Clan Utils Console"));
+	SetConsoleTitleA(OBF("-Nova-"));
 	const HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
 
 	SetConsoleOutputCP(CP_UTF8);

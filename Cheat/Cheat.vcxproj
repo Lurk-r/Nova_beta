@@ -84,6 +84,9 @@
     <TargetName>$(SolutionName)-$(Configuration)</TargetName>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnabled>false</VcpkgEnabled>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -175,8 +178,13 @@
   <ItemGroup>
     <ClInclude Include="Cheat.hpp" />
     <ClInclude Include="Backend\Backend.hpp" />
+    <ClInclude Include="Game\Data\AdderLists.hpp" />
+    <ClInclude Include="Game\Data\OfferItemDumper.hpp" />
+    <ClInclude Include="Game\Data\SlotsHelper.hpp" />
+    <ClInclude Include="Game\Extras.hpp" />
     <ClInclude Include="Game\Gameplay.hpp" />
     <ClInclude Include="Game\Data\Enums.hpp" />
+    <ClInclude Include="Game\Login.hpp" />
     <ClInclude Include="Game\Websocket\Commands.hpp" />
     <ClInclude Include="Game\Data\Indexes.hpp" />
     <ClInclude Include="Game\Data\Lists.hpp" />
@@ -188,6 +196,7 @@
     <ClInclude Include="Menu\Font\Byte.hpp" />
     <ClInclude Include="Menu\Font\FontAwesome.hpp" />
     <ClInclude Include="Menu\Menu.hpp" />
+    <ClInclude Include="Menu\NovaWidgets.hpp" />
     <ClInclude Include="Menu\Snowflake.hpp" />
     <ClInclude Include="Game\Pointers\PointerWrapper.hpp" />
     <ClInclude Include="Utils\Hooks.hpp" />
@@ -200,9 +209,14 @@
   <ItemGroup>
     <ClCompile Include="Cheat.cpp" />
     <ClCompile Include="Backend\Backend.cpp" />
+    <ClCompile Include="Game\Data\AdderLists.cpp" />
+    <ClCompile Include="Game\Data\OfferItemDumper.cpp" />
+    <ClCompile Include="Game\Data\SlotsHelper.cpp" />
+    <ClCompile Include="Game\Extras.cpp" />
     <ClCompile Include="Game\Gameplay.cpp" />
     <ClCompile Include="Game\Data\Lists.cpp" />
     <ClCompile Include="Game\Data\Patterns.cpp" />
+    <ClCompile Include="Game\Login.cpp" />
     <ClCompile Include="Game\Pointers\Pointers.cpp" />
     <ClCompile Include="Game\Websocket\Commands.cpp" />
     <ClCompile Include="DllMain.cpp" />

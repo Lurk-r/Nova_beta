@@ -42,8 +42,32 @@ static LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 
     if (Features.OpenMenu)
     {
+        // Pass event to ImGui
         ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-        return true;
+
+        // FIX: Only block INPUT messages. 
+        // Previously, returning 'true' for everything blocked System messages (Paint, Resize, etc), causing the freeze.
+        switch (uMsg)
+        {
+        case WM_MOUSEMOVE:
+        case WM_LBUTTONDOWN:
+        case WM_LBUTTONUP:
+        case WM_RBUTTONDOWN:
+        case WM_RBUTTONUP:
+        case WM_MBUTTONDOWN:
+        case WM_MBUTTONUP:
+        case WM_MOUSEWHEEL:
+        case WM_XBUTTONDOWN:
+        case WM_XBUTTONUP:
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+        case WM_SYSKEYDOWN:
+        case WM_SYSKEYUP:
+        case WM_CHAR:
+        case WM_DEVICECHANGE:
+            return true; // Block input from reaching the game
+        }
+        // Let other messages (WM_PAINT, WM_ACTIVATE, etc.) pass through!
     }
 
     return CallWindowProc(Features.originalWndProc, hWnd, uMsg, wParam, lParam);
@@ -56,6 +80,7 @@ void Backend::LoadImGui(HWND window, ID3D11Device* device, ID3D11DeviceContext* 
     io.ConfigFlags = ImGuiConfigFlags_NoMouseCursorChange;
     ImGui_ImplWin32_Init(window);
     ImGui_ImplDX11_Init(device, context);
+    InitializeNovaFonts();
     ImGui::StyleColorsDark();
 
     // Load Fonts
@@ -84,6 +109,7 @@ void Backend::LoadImGui(HWND window, ID3D11Device* device, ID3D11DeviceContext* 
     Fonts::Large = io.Fonts->AddFontFromMemoryTTF(StolzlFont, sizeof(StolzlFont), 23.0f, &font_config, ranges);
     Fonts::Bold = io.Fonts->AddFontFromMemoryTTF(StolzlBold, sizeof(StolzlBold), 17.0f, &font_config, ranges);
     Fonts::ArrowFont = io.Fonts->AddFontFromMemoryTTF(ArrowFont, sizeof(ArrowFont), 17.0f, &font_config, ranges);
+
 }
 
 static long PresentHook(IDXGISwapChain* pointerSwapChain, UINT sync, UINT flags)
@@ -123,40 +149,12 @@ bool Backend::Load()
     return true;
 }
 
-void Backend::CursorFix(bool clip)
+void Backend::CursorFix(bool menuOpen)
 {
-    if (!Backend::MAIN_WINDOW) return;
-
-    HWND activeWindow = GetForegroundWindow();
-    if (activeWindow != Backend::MAIN_WINDOW || IsIconic(Backend::MAIN_WINDOW)) return;
-
-    RECT windowRect;
-    if (!GetWindowRect(Backend::MAIN_WINDOW, &windowRect)) return;
-
-    POINT center = {
-        (windowRect.left + windowRect.right) * 0.5,
-        (windowRect.top + windowRect.bottom) * 0.5
-    };
-
-    if (!clip)
-    {
-        SetCursorPos(center.x, center.y);
-    }
-    else
-    {
-        RECT screenRect;
-        HMONITOR monitor = MonitorFromWindow(Backend::MAIN_WINDOW, MONITOR_DEFAULTTONEAREST);
-        MONITORINFO monitorInfo = { sizeof(monitorInfo) };
-
-        if (GetMonitorInfo(monitor, &monitorInfo))
-        {
-            screenRect = monitorInfo.rcMonitor;
-        }
-        else
-        {
-            screenRect = { 0, 0, Backend::WIDTH, Backend::HEIGHT };
-        }
-
-        ClipCursor(&screenRect);
+    static bool lastState = false;
+    if (menuOpen != lastState) {
+        ShowCursor(menuOpen ? TRUE : FALSE);
+        ClipCursor(NULL);
+        lastState = menuOpen;
     }
 }
