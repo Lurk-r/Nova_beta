@@ -6,7 +6,7 @@ namespace IL2CPP
 {
 	namespace Exception
 	{
-		enum class ExpectedMemberType : int8_t
+		enum class ExpectedMemberType : int
 		{
 			FIELD,
 			PROPERTY,
@@ -15,7 +15,7 @@ namespace IL2CPP
 
 		class NoSuchMember : public ExceptionBase
 		{
-			public:
+		public:
 			ExpectedMemberType expectedResult;
 			std::string classname;
 			std::string wantedName;
@@ -28,18 +28,18 @@ namespace IL2CPP
 
 				std::string resultTypeName = "unknown";
 
-				switch (expectedResult)
+				if (expectedResult == ExpectedMemberType::FIELD)
 				{
-					case ExpectedMemberType::FIELD:
-						resultTypeName = "field";
-						break;
-					case ExpectedMemberType::PROPERTY:
-						resultTypeName = "property";
-						break;
-					case ExpectedMemberType::METHOD:
-						resultTypeName = "method";
-						break;
-					}
+					resultTypeName = "field";
+				}
+				else if (expectedResult == ExpectedMemberType::PROPERTY)
+				{
+					resultTypeName = "property";
+				}
+				else if (expectedResult == ExpectedMemberType::METHOD)
+				{
+					resultTypeName = "method";
+				}
 
 				InitializeException(
 					IL2CPP_NAMEOF(NoSuchMember),
@@ -53,4 +53,3 @@ namespace IL2CPP
 		};
 	}
 }
-
