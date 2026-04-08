@@ -31,6 +31,7 @@ namespace IL2CPP
 		extern const Image* UnityCoreModule;
 		extern const Image* UnityPhysicsModule;
 		extern const Image* AssemblyCSharp;
+		extern const Image* NewtonSoft;
 	}
 
 	namespace CommonCShrap

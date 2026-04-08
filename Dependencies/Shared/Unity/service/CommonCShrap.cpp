@@ -30,6 +30,7 @@ namespace IL2CPP
 		const Image* UnityCoreModule;
 		const Image* UnityPhysicsModule;
 		const Image* AssemblyCSharp;
+		const Image* NewtonSoft;
 	}
 
 	namespace CommonCShrap
@@ -48,6 +49,7 @@ namespace IL2CPP
 			DefaultImage::UnityCoreModule = domain->OpenAssembly("UnityEngine.CoreModule.dll");
 			DefaultImage::UnityPhysicsModule = domain->OpenAssembly("UnityEngine.PhysicsModule.dll");
 			DefaultImage::AssemblyCSharp = domain->OpenAssembly("Assembly-CSharp.dll");
+			DefaultImage::NewtonSoft = domain->OpenAssembly("Newtonsoft.Json.dll");
 
 			constexpr auto INIT_CORLIB = [](Class*& field, const char* className)
 			{
