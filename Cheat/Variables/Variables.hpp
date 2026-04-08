@@ -118,4 +118,5 @@ namespace Variables
 #pragma region ACCOUNT_INFO
 #pragma endregion
 	}
+	inline bool g_showNotification = false;
 }

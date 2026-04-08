@@ -12,7 +12,7 @@ namespace Variables
 		bool m_bSendCustomCommand = false;
 
 		char m_cCustomEventName[67] = "update_progress";
-		char m_cCustomJson[999999] = "{}";
+		char m_cCustomJson[999999] = "";
 #pragma endregion
 
 #pragma region ACCOUNT

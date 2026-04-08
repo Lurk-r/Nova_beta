@@ -22,8 +22,6 @@
 
 namespace Cheat
 {
-   
-
     void Init()
     {
         // Init
@@ -34,7 +32,7 @@ namespace Cheat
 
 #pragma region HOOKS
 
-        // Extras 
+        // Extras
         Login::Init();
         Extras::Init();
 
@@ -51,6 +49,6 @@ namespace Cheat
 #pragma endregion
 
         Logger::Info("Hooks initialized!");
-        ImGui::InsertNotification({ ImGuiToastType::Info, 12000, "Nova Loaded, press RCTRL to open/close menu" });
+        Variables::g_showNotification = true;
     }
 }

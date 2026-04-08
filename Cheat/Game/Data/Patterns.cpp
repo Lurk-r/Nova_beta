@@ -25,7 +25,7 @@ namespace Patterns
 #pragma endregion
 
 #pragma region METHOD
-	
+
 #pragma endregion
 
 #pragma region IMAGES
@@ -60,24 +60,23 @@ namespace Patterns
 		IL2CPP::ClassMapping::AddQueue("OfferItem", "Rilisoft");
 
 		// Rilisoft.WebSocket.obfuscatedname
-		IL2CPP::ClassMapping::AddQueue("EventName", "Rilisoft.WebSocket", &EventName);
+		// IL2CPP::ClassMapping::AddQueue("EventName", "Rilisoft.WebSocket", &EventName);
 
 		// ProgressSyncController.Progress
 		IL2CPP::ClassMapping::AddQueue("ProgressSyncController", "Progress", &ProgressSyncController);
-		
+
 		// PGCompany.MainStore.obfuscatedname
 		IL2CPP::ClassMapping::AddQueue("FreePurchaseClass", "PGCompany", &FreePurchaseClass);
 
-		// Rilisoft.obfuscatedname 
+		// Rilisoft.obfuscatedname
 		IL2CPP::ClassMapping::AddQueue("LoadingProgress", "Rilisoft", &LoadingProgress);
-
 	}
-	static void NewtonSoftQueue() 
+	static void NewtonSoftQueue()
 	{
 		// Newtonsoft.Json
 		IL2CPP::ClassMapping::AddQueue("JsonConvert", "Newtonsoft.Json");
 	}
-	static void CorlibQueue() 
+	static void CorlibQueue()
 	{
 		// System.String
 		IL2CPP::ClassMapping::AddQueue("String", "System");
@@ -93,8 +92,8 @@ namespace Patterns
 
 		// Mapping
 		AssemblyCSharpQueue();
-		NewtonSoftQueue();	
-		CorlibQueue();	
+		NewtonSoftQueue();
+		CorlibQueue();
 
 		IL2CPP::ClassMapping::StartMapping();
 	}

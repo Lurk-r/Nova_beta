@@ -63,7 +63,8 @@ class Backend
 
         // Open Menu
         bool OpenMenu = false;
-       
+        int frameCounter = 0;
+
         // Constants
         static const HWND MAIN_WINDOW;
         const int WIDTH = GetSystemMetrics(SM_CXSCREEN);

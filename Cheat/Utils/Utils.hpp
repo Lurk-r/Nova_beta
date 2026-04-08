@@ -3,7 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#define OPEN_MENU_KEY VK_RCONTROL
+#define OPEN_MENU_KEYS { VK_RCONTROL, VK_INSERT, VK_F1, VK_RSHIFT }
 
 namespace Utils
 {

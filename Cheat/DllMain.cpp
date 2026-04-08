@@ -3,26 +3,29 @@
 #include "Cheat.hpp"
 
 #include <Obfusheader.hpp>
-
+/*
 static void PrintLogo()
 {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE);
 
-	std::cout << " _____ _               _   _ _   _ _     " << std::endl;
-	std::cout << "/  __ \\ |             | | | | | (_) |    " << std::endl;
-	std::cout << "| /  \\/ | __ _ _ __   | | | | |_ _| |___ " << std::endl;
-	std::cout << "| |   | |/ _` | '_ \\  | | | | __| | / __|" << std::endl;
-	std::cout << "| \\__/\\ | (_| | | | | | |_| | |_| | \\__ \\" << std::endl;
-	std::cout << " \\____/_|\\__,_|_| |_|  \\___/ \\__|_|_|___/" << std::endl;
+	std::cout << " ________   ________  ___      ___ ________     " << std::endl;
+	std::cout << "|\\   ___  \\|\\   __  \\|\\  \\    /  /|\\   __  \\    " << std::endl;
+	std::cout << "\\ \\  \\\\ \\  \\ \\  \\|\\  \\ \\  \\  /  / | \\  \\|\\  \\   " << std::endl;
+	std::cout << " \\ \\  \\\\ \\  \\ \\  \\\\\\  \\ \\  \\/  / / \\ \\   __  \\  " << std::endl;
+	std::cout << "  \\ \\  \\\\ \\  \\ \\  \\\\\\  \\ \\    / /   \\ \\  \\ \\  \\ " << std::endl;
+	std::cout << "   \\ \\__\\\\ \\__\\ \\_______\\ \\__/ /     \\ \\__\\ \\__\\" << std::endl;
+	std::cout << "    \\|__| \\|__|\\|_______|\\|__|/       \\|__|\\|__|" << std::endl;
 	std::cout << std::endl;
-	//todo make this say nova but im too lazy to rn
+	std::cout << std::endl;
+	std::cout << std::endl;
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY);
 }
-
+*/
 static DWORD WINAPI MainThread(LPVOID param)
 {
 	Features.Load();
-
+	Cheat::Init();
+  /*
 	AllocConsole();
 	FILE* fp;
 	freopen_s(&fp, "CONOUT$", "w", stdout);
@@ -34,9 +37,8 @@ static DWORD WINAPI MainThread(LPVOID param)
 	std::wcout.imbue(std::locale("en_US.UTF-8"));
 
 	PrintLogo();
-	Cheat::Init();
-	printf("Press Right Control to open the menu\n");
-
+	printf("Press Right Control / Right Shift / Insert / F1 to open menu\n");
+  */
 	return 0;
 }
 

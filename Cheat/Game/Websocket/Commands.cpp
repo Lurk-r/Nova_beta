@@ -46,7 +46,7 @@ namespace Commands
         p["i"] = id;
         p["c"] = data;
         p["h"] = RandomHex(16);
-        p["n"] = "leminare.dev";
+        p["n"] = "skin";
 
         json cmd;
         cmd["id"] = 29;
@@ -296,7 +296,7 @@ namespace Commands
         commands.emplace_back(
             WSFunctions::CreateCommand(CommandsID::AddPetV3, {
                 {OBF("i"), index},
-                {OBF("n"), "leminare.dev"}
+                {OBF("n"), "pet"}
                 }));
         return WSFunctions::CreateSnapshot(commands);
     }
@@ -569,6 +569,6 @@ namespace Commands
 
     // TODO COMMANDS
     // unlock_characters {"count":9999} (unlocks extra characters)
-    // create_character {} (creates character) 
+    // create_character {} (creates character)
 #pragma endregion
 }

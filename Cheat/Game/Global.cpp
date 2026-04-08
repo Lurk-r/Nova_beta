@@ -435,7 +435,7 @@ namespace Global
                         {
                             if (IsBannedIndex(pet.Index)) continue;
                             if (std::find(ownedPets.begin(), ownedPets.end(), pet.Index) == ownedPets.end())
-                                commands.emplace_back(WSFunctions::CreateCommand(CommandsID::AddPetV3, { {OBF("i"), pet.Index},{OBF("n"), "leminare.dev"} }));
+                                commands.emplace_back(WSFunctions::CreateCommand(CommandsID::AddPetV3, { {OBF("i"), pet.Index},{OBF("n"), "pet"} }));
                         }
                         if (!commands.empty()) WS::SNC(OBF("Add All Pets"), WSFunctions::CreateSnapshot(commands));
                         Notifications::Success("All pets added!");
@@ -727,7 +727,7 @@ namespace Global
                         }
 
                         Notifications::Info("Claiming " + std::to_string(alreadyClaimed.size()) + " already done, sending rest...");
-                        WS::SNC(OBF("Making Level " + std::to_string(V_W::m_iSetLevel) + " safe"), Commands::ClaimSafeRewards(alreadyClaimed));
+                        WS::SNC("Making Level " + std::to_string(V_W::m_iSetLevel) + " safe", Commands::ClaimSafeRewards(alreadyClaimed));
 
                         Notifications::Info("Setting level to " + std::to_string(V_W::m_iSetLevel) + "...", 5000);
                         json snapshot = Commands::SetPlayerLevel(V_W::m_iSetLevel, 0);
@@ -751,7 +751,6 @@ namespace Global
                             }, true);
                         });
                 }
-
 
                 if (V_M::DumpOfferItemTypes)
                 {
@@ -901,7 +900,6 @@ namespace Global
                     Variables::Miscellaneous::m_bDumpEventNames = false;
                     Extras::HandleEventDump();
                 }
-               
             }
             Update_o(instance);
         }

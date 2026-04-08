@@ -112,7 +112,6 @@ namespace NovaUI
     };
 
     inline UITheme Themes[] = {
-
         { IM_COL32(16, 16, 22, 255), IM_COL32(22, 22, 30, 255), IM_COL32(28, 28, 38, 255), IM_COL32(20, 20, 28, 255), IM_COL32(20, 20, 28, 255), IM_COL32(230, 230, 240, 255), IM_COL32(100, 100, 115, 255), IM_COL32(65, 65, 80, 255), IM_COL32(40, 40, 52, 255), IM_COL32(70, 70, 88, 255), IM_COL32(255, 255, 255, 255), IM_COL32(25, 25, 35, 255), IM_COL32(40, 40, 52, 255), IM_COL32(22, 22, 30, 255), IM_COL32(35, 35, 45, 255), IM_COL32(55, 55, 65, 255) },
         { IM_COL32(235, 230, 240, 250), IM_COL32(255, 255, 255, 255), IM_COL32(248, 248, 252, 255), IM_COL32(250, 248, 255, 255), IM_COL32(250, 248, 255, 255), IM_COL32(50, 50, 60, 255), IM_COL32(140, 140, 150, 255), IM_COL32(160, 160, 170, 255), IM_COL32(220, 220, 230, 255), IM_COL32(180, 180, 195, 255), IM_COL32(30, 30, 40, 255), IM_COL32(240, 240, 245, 255), IM_COL32(210, 210, 220, 255), IM_COL32(255, 255, 255, 255), IM_COL32(230, 230, 235, 255), IM_COL32(200, 200, 210, 255) },
         { IM_COL32(10, 10, 10, 255), IM_COL32(18, 18, 18, 255), IM_COL32(24, 24, 24, 255), IM_COL32(14, 14, 14, 255), IM_COL32(14, 14, 14, 255), IM_COL32(240, 240, 240, 255), IM_COL32(120, 120, 120, 255), IM_COL32(80, 80, 80, 255), IM_COL32(40, 40, 40, 255), IM_COL32(60, 60, 60, 255), IM_COL32(255, 255, 255, 255), IM_COL32(24, 24, 24, 255), IM_COL32(40, 40, 40, 255), IM_COL32(18, 18, 18, 255), IM_COL32(30, 30, 30, 255), IM_COL32(50, 50, 50, 255) },
@@ -263,16 +262,13 @@ namespace NovaUI
         return ImGui::GetColorU32(ImVec4(ThemeColor.x + (1.0f - ThemeColor.x) * 0.4f, ThemeColor.y + (1.0f - ThemeColor.y) * 0.4f, ThemeColor.z + (1.0f - ThemeColor.z) * 0.4f, 1.0f * CurrentAlpha));
     }
 
-    inline const char* TabNames[] = { "Main", "Clans", "Gameplay", "Gifting", "Cloning", "Misc", "Settings" };
-    inline const int TabCount = 7;
-    inline const char* SubTabs[7][4] = {
+    inline const char* TabNames[] = { "Main", "Gameplay", "Misc", "Settings" };
+    inline const int TabCount = 4;
+    inline const char* SubTabs[4][4] = {
         { "Basic", "Currency", "Items", "Other" },
-        { "Members", "Wars", "Chat", "Settings" },
         { "Weapons", "Mods", "Testing", "Debug" },
-        { "Send", "Receive", "History", "Settings" },
-        { "Templates", "Active", "History", "Settings" },
         { "Tools", "Scripts", "Logs", "Other" },
-        { "Appearance", "Scale", "About", "Info" }
+        { "Appearance", "Scale", "", "" }
     };
 
     struct ColorPreset
@@ -367,7 +363,6 @@ namespace NovaUI
 
     inline void TopBar()
     {
-
     }
 
     inline bool Checkbox(const char* label, bool* v)
