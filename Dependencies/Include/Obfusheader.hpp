@@ -19,7 +19,7 @@ Visit https://github.com/ac3ss0r/obfusheader.h for configuration tips & more inf
 
 #pragma region CONFIG
 // C++ only features
-#define CONST_ENCRYPTION            1
+#define CONST_ENCRYPTION            0
 #define CONST_ENCRYPT_MODE          NORMAL // NORMAL & THREADLOCAL
 #define CFLOW_CONST_DECRYPTION      1
 // C & C++ features
@@ -56,12 +56,12 @@ Visit https://github.com/ac3ss0r/obfusheader.h for configuration tips & more inf
 #if defined(_WIN64) || defined(WIN64) || defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 #define _WINDOWS
 #elif  defined(__linux__) || defined(__ANDROID__) // android is linux tbh
-#define _LINUX 
+#define _LINUX
 #elif defined(__APPLE__)
 #define _APPLE // stinky
 #endif
 
-#ifdef __TINYC__ 
+#ifdef __TINYC__
 #error Obfusheader doesn't support TCC at the moment :broken_heart:. Consider using https://github.com/DosX-dev/obfus.h
 #elif !defined(OBF_UNSUPPORTED) && !defined(_MSVC) && !defined(_GNUC)
 #error Your compiler most likely isn't supported by obfusheader.h. If you're sure it's supported use #define OBF_UNSUPPORTED.
@@ -69,7 +69,7 @@ Visit https://github.com/ac3ss0r/obfusheader.h for configuration tips & more inf
 
 #ifdef _MSVC
 #pragma warning(disable:4996) // womp womp bored karma
-//#pragma warning(push, 1) // Disable all warns 
+//#pragma warning(push, 1) // Disable all warns
 #endif
 
 // Without forceinline the compiler will mostly ignore inline methods
@@ -82,7 +82,7 @@ Visit https://github.com/ac3ss0r/obfusheader.h for configuration tips & more inf
 // Prevents functions from inlining forcefully
 #ifdef _MSVC
 #define NOINLINE __declspec(noinline)
-#else 
+#else
 #define NOINLINE __attribute__((noinline))
 #endif
 
@@ -174,7 +174,7 @@ static NOINLINE char __5() { return 5; } static NOINLINE char __6() { return 6; 
 
 // This is s a technique allowing to completely break IDA Decompiler
 #if INDIRECT_BRANCHING
-#ifdef x86_32 
+#ifdef x86_32
 #ifdef _MSC_VER
 #define INDIRECT_BRANCH\
                                 __asm __volatile { \
@@ -261,7 +261,7 @@ static void obfusheader_decoy_9() { obfusheader_decoy_main(); }
 static void obfusheader_decoy_10() { obfusheader_decoy_main(); }
 
 // C++ only features
-#ifdef __cplusplus 
+#ifdef __cplusplus
 // C++ doesn't allow xor-ing bools so this is required for proper encryption. If this causes problems then remove and don't encrypt bools!!!
 #define true 1
 #define false 0
@@ -269,13 +269,13 @@ static void obfusheader_decoy_10() { obfusheader_decoy_main(); }
 // Normal & threadlocal encryption modes
 #define OBF_KEY_NORMAL(x, type, size, key) []() {\
     constexpr static auto result = obf::obfuscator<type, size, key>(x);\
-    return result; }() 
+    return result; }()
 #define OBF_KEY_THREADLOCAL(x, type, size, key) []() {\
     constexpr static auto data = obf::obfuscator<type, size, key>(x);\
     thread_local auto decryptor = obf::decryptor<type, size, key>(data);\
     return decryptor; }()
-#define MAKEOBF_NORMAL(x) OBF_KEY_NORMAL(x, obf::clean_type<decltype(obf::gettype(x))>, obf::getsize(x), (char)RND(1, 255))
-#define MAKEOBF_THREADLOCAL(x) OBF_KEY_THREADLOCAL(x, obf::clean_type<decltype(obf::gettype(x))>, obf::getsize(x), (char)RND(1, 255))
+#define MAKEOBF_NORMAL(x) OBF_KEY_NORMAL(x, obf::clean_type<decltype(obf::gettype(x))>, obf::getsize_v<decltype(x)>, (char)RND(1, 255))
+#define MAKEOBF_THREADLOCAL(x) OBF_KEY_THREADLOCAL(x, obf::clean_type<decltype(obf::gettype(x))>, obf::getsize_v<decltype(x)>, (char)RND(1, 255))
 
 #if defined(_DEBUG)
 
@@ -317,7 +317,6 @@ static void obfusheader_decoy_10() { obfusheader_decoy_main(); }
 // This was created so the header works without type_traits (on gcc and other compilers)
 // Also since type_traits gets updated at newer C++ versions this will help avoiding problems
 namespace meta {
-
     template<class T, T v>
     struct integral_constant {
         static constexpr T value = v;
@@ -444,7 +443,7 @@ namespace meta {
     template<class T>
     struct add_pointer : decltype(try_add_pointer<T>(0)) {};
 
-    // Helpers from C++14 
+    // Helpers from C++14
     template<class T>
     using remove_cv_t = typename remove_cv<T>::type;
     template<class T>
@@ -477,7 +476,6 @@ namespace meta {
 }
 
 namespace obf {
-
     template <class _Ty>
     using clean_type = typename meta::remove_const_t<meta::remove_reference_t<_Ty>>;
 
@@ -491,6 +489,11 @@ namespace obf {
 
     template<typename T>
     constexpr size_t getsize(T) { return 1; }
+
+    template<typename T>
+    inline constexpr size_t getsize_v = 1;
+    template<typename T, int N>
+    inline constexpr size_t getsize_v<T[N]> = N;
 
     template<typename T, size_t size>
     constexpr static T gettype(const T(&)[size]);
